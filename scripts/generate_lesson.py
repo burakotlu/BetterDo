@@ -27,7 +27,17 @@ Example structure: {example}
 
 def generate(language, topic, model, base_url):
     catalog = load_catalog()
-    example = next(item for item in catalog["lessons"] if item["language"] == language)
+    example = next((item for item in catalog["lessons"] if item["language"] == language), None)
+    if example is None:
+        example = {
+            "id": language + "-word-slug", "language": language, "word": "target-language word",
+            "pronunciation": "/IPA/", "meaning": "Türkçe anlam", "partOfSpeech": "Türkçe sözcük türü",
+            "level": "A2", "category": "Türkçe kategori", "context": "Türkçe kullanım açıklaması",
+            "examples": [{"text": "Target-language sentence", "translation": "Türkçe çeviri"} for _ in range(3)],
+            "dialogueContext": "Türkçe diyalog bağlamı",
+            "dialogue": [{"speaker": speaker, "text": "Target-language sentence", "translation": "Türkçe çeviri"} for speaker in ("A", "B", "A")],
+            "quiz": [{"question": "Türkçe soru", "options": ["Option A", "Option B", "Option C"], "answer": 0, "explanation": "Türkçe açıklama"} for _ in range(2)]
+        }
     existing = [item["word"] for item in catalog["lessons"] if item["language"] == language]
     system = PROMPT.format(language=language, existing=json.dumps(existing, ensure_ascii=False), example=json.dumps(example, ensure_ascii=False))
     messages = [{"role": "system", "content": system}, {"role": "user", "content": json.dumps({"topic": topic}, ensure_ascii=False)}]

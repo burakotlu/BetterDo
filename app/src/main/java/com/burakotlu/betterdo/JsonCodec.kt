@@ -6,9 +6,10 @@ import java.time.LocalDate
 
 object JsonCodec {
     private fun JSONArray.objects() = (0 until length()).map { getJSONObject(it) }
+    private fun validText(value: String) = value.isNotBlank() && value.length <= 1200 && value.none { it.code < 32 && it != '\n' && it != '\t' }
     fun lessons(raw: String): List<Lesson> {
         val root = JSONObject(raw)
-        require(root.getInt("version") == 1)
+        require(root.get("version") == 1)
         return root.getJSONArray("lessons").objects().map { item ->
             Lesson(
                 item.getString("id"), item.getString("language"), item.getString("word"), item.getString("pronunciation"),
@@ -16,14 +17,25 @@ object JsonCodec {
                 item.getString("context"), item.getJSONArray("examples").objects().map { Example(it.getString("text"), it.getString("translation")) },
                 item.getString("dialogueContext"), item.getJSONArray("dialogue").objects().map { DialogueLine(it.getString("speaker"), it.getString("text"), it.getString("translation")) },
                 item.getJSONArray("quiz").objects().map { quiz ->
+                    require(quiz.get("answer") is Int)
                     val options = quiz.getJSONArray("options")
                     Quiz(quiz.getString("question"), (0 until options.length()).map { options.getString(it) }, quiz.getInt("answer"), quiz.getString("explanation"))
                 }
             )
         }.also { lessons ->
             require(lessons.map { it.id }.distinct().size == lessons.size)
-            require(listOf("en", "de").all { lang -> lessons.any { it.language == lang } })
-            require(lessons.all { it.quiz.size == 2 && it.examples.size == 3 && it.quiz.all { quiz -> quiz.answer in quiz.options.indices } })
+            require(lessons.size <= 10000)
+            require(lessons.all { lesson ->
+                lesson.language in setOf("en", "de") && lesson.id.matches(Regex("${lesson.language}-[a-z0-9]+(?:-[a-z0-9]+)*")) &&
+                    lesson.level in setOf("A1", "A2", "B1") &&
+                    listOf(lesson.id, lesson.word, lesson.pronunciation, lesson.meaning, lesson.partOfSpeech, lesson.category, lesson.context, lesson.dialogueContext).all(::validText) &&
+                    lesson.examples.size == 3 && lesson.examples.all { validText(it.text) && validText(it.translation) } &&
+                    lesson.dialogue.size in 3..5 && lesson.dialogue.all { it.speaker in setOf("A", "B") && validText(it.text) && validText(it.translation) } &&
+                    lesson.quiz.size == 2 && lesson.quiz.all { quiz ->
+                        validText(quiz.question) && validText(quiz.explanation) && quiz.options.size == 3 && quiz.options.all(::validText) &&
+                            quiz.options.map { it.trim().lowercase() }.distinct().size == 3 && quiz.answer in quiz.options.indices
+                    }
+            })
         }
     }
 

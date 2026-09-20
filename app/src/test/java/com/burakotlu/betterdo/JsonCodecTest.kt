@@ -16,8 +16,8 @@ class JsonCodecTest {
         JsonCodec.decodeProgress("""{"version":2,"language":"en","courses":{}}""")
     }
 
-    @Test fun bundledContentLoadsInAndroidParser() {
-        val lessons = JsonCodec.lessons(File("src/main/assets/lessons.json").readText())
+    @Test fun catalogFixtureLoadsInAndroidParser() {
+        val lessons = JsonCodec.lessons(javaClass.classLoader!!.getResource("lessons.json")!!.readText())
         assertTrue(lessons.size >= 14)
         assertEquals("sneeze", lessons.first().word)
         assertEquals("niesen", lessons.first { it.language == "de" }.word)

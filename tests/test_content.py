@@ -14,12 +14,19 @@ from generate_lesson import generate
 
 class ContentTests(unittest.TestCase):
     def setUp(self):
-        self.catalog = load_catalog()
+        fixture = Path(__file__).resolve().parents[1] / "app/src/androidTest/assets/lessons.json"
+        self.catalog = validate_catalog(json.loads(fixture.read_text(encoding="utf-8")))
         self.lesson = copy.deepcopy(self.catalog["lessons"][0])
 
-    def test_seed_has_week_in_each_language(self):
-        for language in ("en", "de"):
-            self.assertGreaterEqual(sum(item["language"] == language for item in self.catalog["lessons"]), 7)
+    def test_published_catalog_is_valid(self):
+        load_catalog()
+
+    def test_empty_and_single_language_catalogs_are_valid(self):
+        validate_catalog({"version": 1, "lessons": []})
+        validate_catalog({"version": 1, "lessons": [self.lesson]})
+
+    def test_production_apk_has_no_bundled_catalog(self):
+        self.assertFalse((Path(__file__).resolve().parents[1] / "app/src/main/assets/lessons.json").exists())
 
     def test_boolean_answer_is_not_an_index(self):
         self.lesson["quiz"][0]["answer"] = True
@@ -84,6 +91,12 @@ class ContentTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             generate("en", "daily life", "test-model", "http://localhost:11434")
         self.assertEqual(mock_urlopen.call_count, 3)
+
+    @patch("generate_lesson.load_catalog", return_value={"version": 1, "lessons": []})
+    @patch("generate_lesson.urlopen")
+    def test_agent_can_bootstrap_empty_catalog(self, mock_urlopen, _):
+        mock_urlopen.return_value.__enter__.return_value.read.return_value = json.dumps({"message": {"content": json.dumps(self.lesson)}}).encode()
+        self.assertEqual(generate("en", "daily life", "test-model", "http://localhost:11434")["id"], self.lesson["id"])
 
 
 if __name__ == "__main__":

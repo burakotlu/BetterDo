@@ -68,7 +68,7 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
     DisposableEffect(speech, lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) speech.stop()
-            if (event == Lifecycle.Event.ON_RESUME) model.refreshDate()
+            if (event == Lifecycle.Event.ON_RESUME) model.onResume()
         }
         lifecycle.lifecycle.addObserver(observer)
         onDispose { lifecycle.lifecycle.removeObserver(observer); speech.close() }
@@ -84,6 +84,10 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.app_name) + ".", fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp) },
                 actions = {
+                    IconButton(onClick = { model.refreshCatalog() }, enabled = !state.syncing && !state.loading) {
+                        if (state.syncing) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        else Icon(Icons.Outlined.Sync, contentDescription = "Dersleri güncelle")
+                    }
                     Box {
                         TextButton(onClick = { languageMenu = true }, enabled = !state.loading && !state.fatalError) {
                             Text(if (state.language == "en") "EN · English" else "DE · Deutsch", fontSize = 13.sp)
@@ -114,7 +118,10 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
         Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
             when {
                 state.loading -> CircularProgressIndicator(Modifier.padding(48.dp))
-                state.fatalError -> EmptyCard("Dersler yüklenemedi", state.message.orEmpty())
+                !state.catalogReady -> Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    EmptyCard("İlk derslerini indirelim", state.syncError ?: "Dersler internetten indirilir, sonra çevrimdışı kullanılabilir.")
+                    Button(onClick = { model.refreshCatalog() }, enabled = !state.syncing) { Text("Yeniden dene") }
+                }
                 else -> {
                     val selected = state.catalog.find { it.id == selectedId }
                     val lesson = selected ?: if (tab == 0) state.daily else null
@@ -123,10 +130,17 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
                             Column(Modifier.widthIn(max = 640.dp).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                                 if (selected != null) TextButton(onClick = { selectedId = null }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null); Text(" Listeye dön") }
                                 else Intro(state)
+                                if (state.syncError != null) Text(state.syncError.orEmpty(), color = Muted, fontSize = 12.sp)
                                 if (!state.writable) Text("Kayıtlı ilerleme okunamadı. Bu oturumdaki değişiklikler kaydedilmiyor.", color = MaterialTheme.colorScheme.error)
                                 LessonContent(lesson, state, model, speech) { if (tab == 1) selectedId = null }
                                 Text("Bir anda değil. Her gün biraz.", color = Muted, fontSize = 12.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 20.dp))
                             }
+                        }
+                    } else if (tab == 0) {
+                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            EmptyCard("Yeni dersler yolda", "Bu dilde henüz yayınlanmış ders yok. Diğer dili seçebilir veya dersleri güncelleyebilirsin.")
+                            state.syncError?.let { Text(it, color = Muted) }
+                            Button(onClick = { model.refreshCatalog() }, enabled = !state.syncing) { Text("Dersleri güncelle") }
                         }
                     } else {
                         val list = if (tab == 1) state.due else state.catalog.filter { it.id in state.course.cards }
@@ -167,7 +181,7 @@ private fun LessonContent(lesson: Lesson, state: LearningState, model: LearningV
     Card(colors = CardDefaults.cardColors(containerColor = Forest), shape = RoundedCornerShape(24.dp)) {
         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("GÜNÜN KELİMESİ · ${lesson.level}", color = Lime, fontSize = 10.sp, letterSpacing = 1.4.sp)
-            Text(lesson.word, color = Color.White, fontSize = 44.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.5).sp)
+            Text(lesson.word, color = Color.White, fontSize = 44.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.5).sp)
             Text("${lesson.pronunciation} · ${lesson.partOfSpeech}", color = Color(0xFFC5D6C7), fontSize = 12.sp)
             Text(lesson.meaning, color = Lime, fontSize = 22.sp)
             Text(lesson.context, color = Color(0xFFD0DED2), fontSize = 13.sp, lineHeight = 21.sp)

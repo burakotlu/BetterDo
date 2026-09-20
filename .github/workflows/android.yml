@@ -3,7 +3,9 @@ name: Android checks and APK
 on:
   push:
     branches: [main]
+    paths-ignore: ['content/**']
   pull_request:
+    paths-ignore: ['content/**']
   workflow_dispatch:
 
 permissions:
@@ -27,12 +29,15 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Validate bundled lessons and content agent
+      - name: Validate remote catalog and content agent
         run: |
           python3 scripts/validate_content.py
           python3 -m unittest discover -s tests -v
       - name: Build and test Android
         run: bash ./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+      - name: Ensure lessons are not bundled in the application
+        run: |
+          python3 -c "import zipfile; z=zipfile.ZipFile('app/build/outputs/apk/debug/app-debug.apk'); assert 'assets/lessons.json' not in z.namelist()"
       - uses: actions/upload-artifact@v4
         with:
           name: BetterDo-debug-apk

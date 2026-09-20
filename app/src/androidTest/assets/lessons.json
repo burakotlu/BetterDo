@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "lessons": [
+    {
+      "id": "en-sneeze", "language": "en", "word": "sneeze", "pronunciation": "/sniːz/", "meaning": "hapşırmak", "partOfSpeech": "fiil", "level": "A2", "category": "Günlük hayat",
+      "context": "Burnun gıdıklandığında, soğuk algınlığında ya da bahar alerjisinde kullanabileceğin bir kelime.",
+      "examples": [{"text": "I think I'm going to sneeze.", "translation": "Sanırım hapşıracağım."}, {"text": "Dust makes me sneeze.", "translation": "Toz beni hapşırtıyor."}, {"text": "Cover your mouth when you sneeze.", "translation": "Hapşırırken ağzını kapat."}],
+      "dialogueContext": "Bir arkadaşınla parkta yürüyorsun.",
+      "dialogue": [{"speaker": "A", "text": "These flowers make me sneeze. Achoo!", "translation": "Bu çiçekler beni hapşırtıyor. Hapşu!"}, {"speaker": "B", "text": "Bless you! Do you need a tissue?", "translation": "Çok yaşa! Mendile ihtiyacın var mı?"}, {"speaker": "A", "text": "Yes, please. Thank you!", "translation": "Evet, lütfen. Teşekkür ederim!"}],
+      "quiz": [{"question": "“Hapşırmak” hangi kelime?", "options": ["smile", "sneeze", "sleep"], "answer": 1, "explanation": "Sneeze, hapşırmak demektir."}, {"question": "Boşluğu tamamla: Dust makes me ___.", "options": ["sneeze", "sneezes", "sneezing"], "answer": 0, "explanation": "Make + kişi + fiilin yalın hali kullanılır."}]
+    },
+    {
+      "id": "en-errand", "language": "en", "word": "errand", "pronunciation": "/ˈerənd/", "meaning": "kısa bir dışarı işi", "partOfSpeech": "isim", "level": "B1", "category": "Şehir hayatı",
+      "context": "Kargoyu bırakmak ya da eczaneye uğramak gibi kısa işler için kullanılır. “Run an errand” çok yaygın bir ifadedir.",
+      "examples": [{"text": "I need to run an errand.", "translation": "Dışarıda kısa bir iş halletmem gerekiyor."}, {"text": "I'm running errands this morning.", "translation": "Bu sabah dışarıdaki işlerimi hallediyorum."}, {"text": "Can you run an errand for me?", "translation": "Benim için dışarıda bir iş halledebilir misin?"}],
+      "dialogueContext": "Öğle yemeğinden önce plan yapıyorsunuz.",
+      "dialogue": [{"speaker": "A", "text": "Are you free now?", "translation": "Şimdi müsait misin?"}, {"speaker": "B", "text": "I need to run an errand first.", "translation": "Önce dışarıda kısa bir iş halletmem gerekiyor."}, {"speaker": "A", "text": "No problem. See you at one.", "translation": "Sorun değil. Birde görüşürüz."}],
+      "quiz": [{"question": "Hangisi bir “errand” örneğidir?", "options": ["Bütün gün uyumak", "Bir yıl yurtdışında okumak", "Eczaneden ilaç almak"], "answer": 2, "explanation": "Errand, genellikle dışarıda halledilen kısa bir iştir."}, {"question": "Boşluğu tamamla: I need to ___ an errand.", "options": ["run", "sleep", "drink"], "answer": 0, "explanation": "Yerleşik ifade “run an errand” şeklindedir."}]
+    },
+    {
+      "id": "en-receipt", "language": "en", "word": "receipt", "pronunciation": "/rɪˈsiːt/", "meaning": "fiş, makbuz", "partOfSpeech": "isim", "level": "A2", "category": "Alışveriş",
+      "context": "Alışverişten sonra kasadan aldığın fiş. Yazılıştaki “p” harfi okunmaz.",
+      "examples": [{"text": "Can I have a receipt, please?", "translation": "Fiş alabilir miyim, lütfen?"}, {"text": "Keep your receipt.", "translation": "Fişini sakla."}, {"text": "The receipt is in the bag.", "translation": "Fiş poşetin içinde."}],
+      "dialogueContext": "Bir kafede ödeme yapıyorsun.",
+      "dialogue": [{"speaker": "A", "text": "Would you like a receipt?", "translation": "Fiş ister misiniz?"}, {"speaker": "B", "text": "Yes, please.", "translation": "Evet, lütfen."}, {"speaker": "A", "text": "Here you go. Have a nice day!", "translation": "Buyurun. İyi günler!"}],
+      "quiz": [{"question": "Kasada fiş istemek için ne söylersin?", "options": ["Keep the change.", "Can I have a receipt, please?", "Where is my seat?"], "answer": 1, "explanation": "Bu cümle kibarca fiş istemek için kullanılır."}, {"question": "“Receipt” kelimesinde hangi harf okunmaz?", "options": ["r", "t", "p"], "answer": 2, "explanation": "Receipt /rɪˈsiːt/ diye telaffuz edilir; p sessizdir."}]
+    },
+    {
+      "id": "en-leftovers", "language": "en", "word": "leftovers", "pronunciation": "/ˈleftˌəʊvəz/", "meaning": "artan yemek", "partOfSpeech": "çoğul isim", "level": "B1", "category": "Mutfakta",
+      "context": "Bir öğünden kalan, sonra yiyebileceğin yemeklerden söz ederken kullanılır.",
+      "examples": [{"text": "We have leftovers from dinner.", "translation": "Akşam yemeğinden artan yemeğimiz var."}, {"text": "Put the leftovers in the fridge.", "translation": "Artan yemeği buzdolabına koy."}, {"text": "I'll have the leftovers for lunch.", "translation": "Öğle yemeğinde artan yemeği yiyeceğim."}],
+      "dialogueContext": "Evde öğle yemeğini düşünüyorsunuz.",
+      "dialogue": [{"speaker": "A", "text": "Shall we cook something?", "translation": "Bir şey pişirelim mi?"}, {"speaker": "B", "text": "There are leftovers in the fridge.", "translation": "Buzdolabında artan yemek var."}, {"speaker": "A", "text": "Great! Let's heat them up.", "translation": "Harika! Onları ısıtalım."}],
+      "quiz": [{"question": "“Leftovers” ne demek?", "options": ["Artan yemek", "Alışveriş listesi", "Mutfak dolabı"], "answer": 0, "explanation": "Bir öğünden kalan yemekleri anlatır."}, {"question": "Boşluğu tamamla: The leftovers ___ in the fridge.", "options": ["is", "are", "am"], "answer": 1, "explanation": "Leftovers çoğuldur, bu yüzden are kullanılır."}]
+    },
+    {
+      "id": "en-borrow", "language": "en", "word": "borrow", "pronunciation": "/ˈbɒrəʊ/", "meaning": "ödünç almak", "partOfSpeech": "fiil", "level": "A2", "category": "Arkadaşlarla",
+      "context": "Bir şeyi geri vermek üzere alırken “borrow” kullanılır. Ödünç vermek ise “lend” demektir.",
+      "examples": [{"text": "Can I borrow your pen?", "translation": "Kalemini ödünç alabilir miyim?"}, {"text": "I borrowed a book from the library.", "translation": "Kütüphaneden bir kitap ödünç aldım."}, {"text": "You can borrow my umbrella.", "translation": "Şemsiyemi ödünç alabilirsin."}],
+      "dialogueContext": "Telefonunun şarjı bitmek üzere.",
+      "dialogue": [{"speaker": "A", "text": "Can I borrow your charger?", "translation": "Şarj aletini ödünç alabilir miyim?"}, {"speaker": "B", "text": "Of course. Here it is.", "translation": "Tabii ki. İşte burada."}, {"speaker": "A", "text": "Thanks. I'll give it back soon.", "translation": "Teşekkürler. Yakında geri vereceğim."}],
+      "quiz": [{"question": "“Borrow” hangi yöndeki işlemi anlatır?", "options": ["Satın almak", "Ödünç vermek", "Ödünç almak"], "answer": 2, "explanation": "Borrow ödünç almak, lend ödünç vermektir."}, {"question": "Boşluğu tamamla: Can I ___ your pen?", "options": ["borrow", "lend", "bring back"], "answer": 0, "explanation": "Karşındaki kişinin kalemini istediğinde borrow dersin."}]
+    },
+    {
+      "id": "en-cozy", "language": "en", "word": "cozy", "pronunciation": "/ˈkəʊzi/", "meaning": "rahat ve sıcak", "partOfSpeech": "sıfat", "level": "B1", "category": "Evde",
+      "context": "Sana sıcak ve rahat hissettiren bir oda veya ortam için kullanılır. İngiliz İngilizcesinde “cosy” yazımı da yaygındır.",
+      "examples": [{"text": "This cafe is really cozy.", "translation": "Bu kafe gerçekten sıcak ve rahat."}, {"text": "We had a cozy evening at home.", "translation": "Evde rahat bir akşam geçirdik."}, {"text": "This blanket keeps me cozy.", "translation": "Bu battaniye beni sıcak ve rahat tutuyor."}],
+      "dialogueContext": "Yeni bir kafeye giriyorsunuz.",
+      "dialogue": [{"speaker": "A", "text": "I love this little cafe.", "translation": "Bu küçük kafeyi çok seviyorum."}, {"speaker": "B", "text": "It's so cozy in here.", "translation": "Burası çok sıcak ve rahat."}, {"speaker": "A", "text": "Let's sit by the window.", "translation": "Pencere kenarına oturalım."}],
+      "quiz": [{"question": "Hangi yer için “cozy” demek daha uygun?", "options": ["Gürültülü bir şantiye", "Sıcak, rahat bir oda", "Soğuk bir otopark"], "answer": 1, "explanation": "Cozy, sıcaklık ve rahatlık hissi verir."}, {"question": "Boşluğu tamamla: This cafe ___ cozy.", "options": ["are", "be", "is"], "answer": 2, "explanation": "Tekil özne “this cafe” ile is kullanılır."}]
+    },
+    {
+      "id": "en-commute", "language": "en", "word": "commute", "pronunciation": "/kəˈmjuːt/", "meaning": "işe gidip gelmek", "partOfSpeech": "fiil", "level": "B1", "category": "Yolda",
+      "context": "Ev ile iş arasında düzenli yolculuk yapmayı anlatır. İsim olarak bu yolculuğun kendisini de ifade eder.",
+      "examples": [{"text": "I commute by train.", "translation": "İşe trenle gidip geliyorum."}, {"text": "She commutes to Berlin every day.", "translation": "O her gün Berlin'e işe gidip geliyor."}, {"text": "My commute takes thirty minutes.", "translation": "İşe gidiş yolculuğum otuz dakika sürüyor."}],
+      "dialogueContext": "Bir iş arkadaşınla konuşuyorsun.",
+      "dialogue": [{"speaker": "A", "text": "How do you commute to work?", "translation": "İşe nasıl gidip geliyorsun?"}, {"speaker": "B", "text": "I usually take the train.", "translation": "Genellikle trene biniyorum."}, {"speaker": "A", "text": "Me too. It's easy and quick.", "translation": "Ben de. Kolay ve hızlı."}],
+      "quiz": [{"question": "“Commute” neyi anlatır?", "options": ["İşe düzenli gidip gelmeyi", "Tatile çıkmayı", "Yürüyüşte kaybolmayı"], "answer": 0, "explanation": "Commute, ev ve iş arasındaki düzenli yolculuktur."}, {"question": "Boşluğu tamamla: I commute ___ train.", "options": ["at", "by", "on the by"], "answer": 1, "explanation": "Ulaşım biçimini anlatırken by train denir."}]
+    },
+    {
+      "id": "de-niesen", "language": "de", "word": "niesen", "pronunciation": "/ˈniːzn̩/", "meaning": "hapşırmak", "partOfSpeech": "fiil", "level": "A2", "category": "Günlük hayat",
+      "context": "Hapşırmak için “niesen”, hapşıran birine “çok yaşa” demek için “Gesundheit!” kullanılır.",
+      "examples": [{"text": "Ich muss niesen.", "translation": "Hapşırmam gerekiyor."}, {"text": "Wegen des Staubs muss ich niesen.", "translation": "Toz yüzünden hapşırmam gerekiyor."}, {"text": "Er niest oft im Frühling.", "translation": "O ilkbaharda sık sık hapşırır."}],
+      "dialogueContext": "Parkta arkadaşın hapşırıyor.",
+      "dialogue": [{"speaker": "A", "text": "Ich muss niesen. Hatschi!", "translation": "Hapşırmam gerekiyor. Hapşu!"}, {"speaker": "B", "text": "Gesundheit! Brauchst du ein Taschentuch?", "translation": "Çok yaşa! Mendile ihtiyacın var mı?"}, {"speaker": "A", "text": "Ja, bitte. Danke!", "translation": "Evet, lütfen. Teşekkürler!"}],
+      "quiz": [{"question": "Almancada hapşıran birine ne denir?", "options": ["Gute Nacht!", "Gesundheit!", "Guten Appetit!"], "answer": 1, "explanation": "Gesundheit, bu bağlamda çok yaşa anlamına gelir."}, {"question": "Boşluğu tamamla: Ich muss ___.", "options": ["niest", "niese", "niesen"], "answer": 2, "explanation": "Muss gibi modal fiillerden sonra mastar kullanılır."}]
+    },
+    {
+      "id": "de-einkaufen", "language": "de", "word": "einkaufen", "pronunciation": "/ˈaɪ̯nˌkaʊ̯fn̩/", "meaning": "alışveriş yapmak", "partOfSpeech": "ayrılabilen fiil", "level": "A1", "category": "Alışveriş",
+      "context": "Ayrılabilen bir fiildir: “Ich kaufe ein.” Günlük market alışverişinde sık kullanılır.",
+      "examples": [{"text": "Ich gehe heute einkaufen.", "translation": "Bugün alışverişe gidiyorum."}, {"text": "Wir kaufen im Supermarkt ein.", "translation": "Süpermarkette alışveriş yapıyoruz."}, {"text": "Kaufst du morgen ein?", "translation": "Yarın alışveriş yapacak mısın?"}],
+      "dialogueContext": "Akşam yemeği için hazırlık yapıyorsunuz.",
+      "dialogue": [{"speaker": "A", "text": "Ich gehe einkaufen. Brauchen wir Milch?", "translation": "Alışverişe gidiyorum. Süte ihtiyacımız var mı?"}, {"speaker": "B", "text": "Ja, und auch Brot, bitte.", "translation": "Evet, bir de ekmek lütfen."}, {"speaker": "A", "text": "Alles klar. Bis später!", "translation": "Tamam. Sonra görüşürüz!"}],
+      "quiz": [{"question": "“Einkaufen” ne demek?", "options": ["Alışveriş yapmak", "Yemek pişirmek", "Eve dönmek"], "answer": 0, "explanation": "Einkaufen, alışveriş yapmak anlamına gelir."}, {"question": "Boşluğu tamamla: Wir kaufen heute ___.", "options": ["an", "ein", "auf"], "answer": 1, "explanation": "Einkaufen ayrılır; ein ana cümlede sona gider."}]
+    },
+    {
+      "id": "de-kassenbon", "language": "de", "word": "der Kassenbon", "pronunciation": "/ˈkasn̩ˌbɔŋ/", "meaning": "kasa fişi", "partOfSpeech": "isim · eril", "level": "A2", "category": "Alışveriş",
+      "context": "Alışveriş fişi için kullanılır. Artikeli “der”, çoğulu “die Kassenbons”dur.",
+      "examples": [{"text": "Kann ich den Kassenbon haben?", "translation": "Fişi alabilir miyim?"}, {"text": "Ich brauche einen Kassenbon.", "translation": "Bir fişe ihtiyacım var."}, {"text": "Der Kassenbon ist in der Tasche.", "translation": "Fiş çantanın içinde."}],
+      "dialogueContext": "Market kasasında ödeme yapıyorsun.",
+      "dialogue": [{"speaker": "A", "text": "Möchten Sie den Kassenbon?", "translation": "Fişi ister misiniz?"}, {"speaker": "B", "text": "Ja, bitte.", "translation": "Evet, lütfen."}, {"speaker": "A", "text": "Bitte schön. Einen schönen Tag!", "translation": "Buyurun. İyi günler!"}],
+      "quiz": [{"question": "Kassenbon kelimesinin artikeli hangisi?", "options": ["das", "die", "der"], "answer": 2, "explanation": "Kelime der Kassenbon şeklinde öğrenilir."}, {"question": "Boşluğu tamamla: Ich brauche ___ Kassenbon.", "options": ["einen", "eine", "einem"], "answer": 0, "explanation": "Brauchen ile eril nesne Akkusativ olur: einen Kassenbon."}]
+    },
+    {
+      "id": "de-reste", "language": "de", "word": "die Reste", "pronunciation": "/ˈʁɛstə/", "meaning": "kalanlar, artan yemek", "partOfSpeech": "çoğul isim", "level": "A2", "category": "Mutfakta",
+      "context": "Yemek bağlamında artan yemekleri anlatır. Tekili “der Rest”, kalıntı veya kalan kısım demektir.",
+      "examples": [{"text": "Wir essen heute die Reste von gestern.", "translation": "Bugün dünden kalan yemekleri yiyoruz."}, {"text": "Die Reste sind im Kühlschrank.", "translation": "Artan yemekler buzdolabında."}, {"text": "Ich wärme die Reste auf.", "translation": "Artan yemekleri ısıtıyorum."}],
+      "dialogueContext": "Evde öğle yemeği vakti.",
+      "dialogue": [{"speaker": "A", "text": "Was essen wir heute?", "translation": "Bugün ne yiyeceğiz?"}, {"speaker": "B", "text": "Wir haben noch Reste von gestern.", "translation": "Dünden hâlâ artan yemeklerimiz var."}, {"speaker": "A", "text": "Gut, ich wärme sie auf.", "translation": "İyi, onları ısıtıyorum."}],
+      "quiz": [{"question": "Yemek bağlamında “die Reste” ne demek?", "options": ["Tarifler", "Artan yemekler", "Tabaklar"], "answer": 1, "explanation": "Reste, önceki öğünden kalan yemekleri anlatabilir."}, {"question": "Boşluğu tamamla: Die Reste ___ im Kühlschrank.", "options": ["ist", "bin", "sind"], "answer": 2, "explanation": "Die Reste çoğul olduğu için sind kullanılır."}]
+    },
+    {
+      "id": "de-ausleihen", "language": "de", "word": "ausleihen", "pronunciation": "/ˈaʊ̯sˌlaɪ̯ən/", "meaning": "ödünç almak / vermek", "partOfSpeech": "ayrılabilen fiil", "level": "A2", "category": "Arkadaşlarla",
+      "context": "Bağlama göre ödünç almak veya vermek demektir. “Sich etwas ausleihen” bir şeyi ödünç almaktır.",
+      "examples": [{"text": "Kann ich mir deinen Stift ausleihen?", "translation": "Kalemini ödünç alabilir miyim?"}, {"text": "Ich leihe mir ein Buch aus.", "translation": "Bir kitap ödünç alıyorum."}, {"text": "Sie leiht mir ihr Fahrrad aus.", "translation": "O bana bisikletini ödünç veriyor."}],
+      "dialogueContext": "Arkadaşından bir kitap istiyorsun.",
+      "dialogue": [{"speaker": "A", "text": "Kann ich mir dieses Buch ausleihen?", "translation": "Bu kitabı ödünç alabilir miyim?"}, {"speaker": "B", "text": "Natürlich. Ich habe es schon gelesen.", "translation": "Tabii ki. Ben onu zaten okudum."}, {"speaker": "A", "text": "Danke! Ich bringe es nächste Woche zurück.", "translation": "Teşekkürler! Gelecek hafta geri getireceğim."}],
+      "quiz": [{"question": "“Ich leihe mir ein Buch aus.” ne demek?", "options": ["Bir kitap ödünç alıyorum.", "Bir kitap yazıyorum.", "Bir kitap satın alıyorum."], "answer": 0, "explanation": "Sich etwas ausleihen, bir şeyi ödünç almaktır."}, {"question": "Boşluğu tamamla: Ich leihe mir ein Buch ___.", "options": ["ein", "aus", "mit"], "answer": 1, "explanation": "Ausleihen fiilinin ayrılan öneki aus'tur."}]
+    },
+    {
+      "id": "de-gemuetlich", "language": "de", "word": "gemütlich", "pronunciation": "/ɡəˈmyːtlɪç/", "meaning": "rahat, huzurlu, sıcak", "partOfSpeech": "sıfat", "level": "A2", "category": "Evde",
+      "context": "Kendini rahat ve huzurlu hissettiğin bir ortamı anlatır. Almancada evler ve kafeler için sık duyarsın.",
+      "examples": [{"text": "Das Café ist sehr gemütlich.", "translation": "Kafe çok sıcak ve rahat."}, {"text": "Wir machen es uns gemütlich.", "translation": "Rahatımıza bakıyoruz."}, {"text": "Dein Wohnzimmer ist gemütlich.", "translation": "Oturma odan çok rahat."}],
+      "dialogueContext": "Bir arkadaşının evini ziyaret ediyorsun.",
+      "dialogue": [{"speaker": "A", "text": "Es ist sehr gemütlich hier.", "translation": "Burası çok sıcak ve rahat."}, {"speaker": "B", "text": "Danke! Möchtest du einen Tee?", "translation": "Teşekkürler! Bir çay ister misin?"}, {"speaker": "A", "text": "Ja, gern.", "translation": "Evet, seve seve."}],
+      "quiz": [{"question": "“Gemütlich” nasıl bir ortamı anlatır?", "options": ["Tehlikeli", "Kalabalık ve gürültülü", "Rahat ve huzurlu"], "answer": 2, "explanation": "Gemütlich, rahatlık ve huzur hissini anlatır."}, {"question": "Boşluğu tamamla: Das Café ___ gemütlich.", "options": ["ist", "sind", "bist"], "answer": 0, "explanation": "Das Café tekildir, bu yüzden ist kullanılır."}]
+    },
+    {
+      "id": "de-pendeln", "language": "de", "word": "pendeln", "pronunciation": "/ˈpɛndl̩n/", "meaning": "işe gidip gelmek", "partOfSpeech": "fiil", "level": "B1", "category": "Yolda",
+      "context": "Ev ve iş arasında düzenli gidip gelmeyi anlatır. Bu yolculuğu yapan kişiye “Pendler” veya “Pendlerin” denir.",
+      "examples": [{"text": "Ich pendle jeden Tag nach Berlin.", "translation": "Her gün Berlin'e işe gidip geliyorum."}, {"text": "Sie pendelt mit dem Zug.", "translation": "O trenle işe gidip geliyor."}, {"text": "Viele Menschen pendeln zur Arbeit.", "translation": "Birçok insan işe gidip geliyor."}],
+      "dialogueContext": "İşe giderken bir arkadaşınla karşılaşıyorsun.",
+      "dialogue": [{"speaker": "A", "text": "Pendelst du jeden Tag?", "translation": "Her gün işe gidip geliyor musun?"}, {"speaker": "B", "text": "Ja, ich fahre mit dem Zug.", "translation": "Evet, trenle gidiyorum."}, {"speaker": "A", "text": "Wie lange dauert die Fahrt?", "translation": "Yolculuk ne kadar sürüyor?"}],
+      "quiz": [{"question": "“Pendeln” hangi durumu anlatır?", "options": ["Evde yemek yapmayı", "İşe düzenli gidip gelmeyi", "Tatile gitmeyi"], "answer": 1, "explanation": "Pendeln, iki yer arasında düzenli gidip gelmektir; sıkça iş için kullanılır."}, {"question": "Boşluğu tamamla: Sie pendelt mit ___ Zug.", "options": ["der", "den", "dem"], "answer": 2, "explanation": "Mit, Dativ ister. Der Zug → mit dem Zug."}]
+    }
+  ]
+}

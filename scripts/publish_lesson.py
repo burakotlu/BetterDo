@@ -1,4 +1,4 @@
-"""Add one reviewed draft to the bundled Android catalog."""
+"""Add one reviewed draft to the remote catalog; no APK build is needed."""
 import argparse
 import json
 import os

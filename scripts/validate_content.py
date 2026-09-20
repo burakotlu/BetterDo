@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "app/src/main/assets/lessons.json"
+CATALOG = ROOT / "content/lessons.json"
 
 
 def text(value, field, maximum=1200):
@@ -56,10 +56,10 @@ def validate_lesson(lesson):
 
 
 def validate_catalog(data):
-    if not isinstance(data, dict) or data.get("version") != 1:
+    if not isinstance(data, dict) or type(data.get("version")) is not int or data.get("version") != 1:
         raise ValueError("Catalog version must be 1")
     lessons = data.get("lessons")
-    if not isinstance(lessons, list) or not lessons:
+    if not isinstance(lessons, list):
         raise ValueError("Catalog must contain lessons")
     ids, words, languages = set(), set(), set()
     for lesson in lessons:
@@ -70,8 +70,6 @@ def validate_catalog(data):
         ids.add(lesson["id"])
         words.add(key)
         languages.add(lesson["language"])
-    if languages != {"en", "de"}:
-        raise ValueError("Both en and de courses must have lessons")
     return data
 
 
@@ -82,7 +80,7 @@ def load_catalog(path=CATALOG):
 if __name__ == "__main__":
     try:
         data = load_catalog()
-        print("Valid catalog: {} lessons (English + German).".format(len(data["lessons"])))
+        print("Valid catalog: {} lessons.".format(len(data["lessons"])))
     except (OSError, ValueError) as error:
         print("Content validation failed: {}".format(error), file=sys.stderr)
         sys.exit(1)

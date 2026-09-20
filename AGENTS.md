@@ -16,9 +16,14 @@ Do not add a web frontend or WebView shell. Use Kotlin and Jetpack Compose.
 
 ## Architecture
 - `app/`: native Android application; Kotlin, Jetpack Compose, Android TextToSpeech.
-- `app/src/main/assets/lessons.json`: seed lessons, validated by `scripts/validate_content.py`.
+- `content/lessons.json`: independently published HTTPS catalog; never bundle it in the app APK.
+- `CatalogRepository` + `CatalogDatabase`: validate downloads and cache snapshots in SQLite.
+  Keep retired lessons for progress/review and exclude them from new lesson selection.
+  Failed downloads must preserve the last valid cache and all user progress.
+- `app/src/androidTest/assets/`: test fixtures only, not production lesson data.
 - `scripts/generate_lesson.py`: optional local Ollama content agent; writes drafts.
-- `scripts/publish_lesson.py`: explicitly accepts a reviewed draft into the catalog.
+- `scripts/publish_lesson.py`: accepts a reviewed draft into the remote catalog.
+  Publishing content must not require rebuilding the APK.
 - `tests/`: Python standard-library tests for content and agent validation.
 
 ## Validation

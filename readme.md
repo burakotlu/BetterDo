@@ -6,14 +6,15 @@ Türkçe açıklamalarla İngilizce ve Almanca çalışmak için yerel Android u
 İsim şimdilik BetterDo; uygulama adı `app/src/main/res/values/strings.xml` içinden
 değiştirilebilir. Kotlin + Jetpack Compose kullanır.
 
-## İlk sürüm
+## Özellikler
 
-- Her dilde 7 başlangıç dersi: günlük bir kelime, IPA, anlam ve kullanım bağlamı.
+- Uzaktan yayınlanan İngilizce/Almanca dersler: günlük kelime, IPA, anlam ve kullanım bağlamı.
 - Her derste üç örnek, Türkçe çevirileri, mini diyalog ve iki quiz sorusu.
 - Android TextToSpeech ile normal/yavaş kelime ve cümle telaffuzu.
 - Öğrendim / yarın tekrar et; 1, 3, 7, 14, 30 ve 60 günlük tekrar aralıkları.
 - Dil bazında ayrı kelime defteri, arama, günlük seri ve ilerleme.
-- Dersler uygulamayla gelir. Hesap veya uygulama sunucusu gerekmez.
+- Dersler HTTPS üzerinden indirilir ve telefonda SQLite'ta saklanır. APK'ya kelime/örnek cümle gömülmez.
+- İlk kullanımda internet gerekir; sonraki açılışlarda indirilen dersler çevrimdışı açılır.
 - Geliştirme agent'ı için `AGENTS.md`; yeni ders taslakları için Python/Ollama aracı.
 
 Günlük ders ilk açılışta seçilir, o gün sabit kalır; sonraki gün öğrenilmemiş ilk
@@ -21,6 +22,49 @@ kelimeye geçilir. Dersler bitince en erken tekrar tarihi olan kelime seçilir.
 “Öğrendim” için iki quiz sorusu da doğru yanıtlanmalıdır. Aynı gün tekrarlı
 dokunuşlar seri sayısını veya tekrar aralığını artırmaz. İlerleme yerel takvim
 gününe göre hesaplanır; telefonun saatini değiştirmek takvimi etkiler.
+
+## Dersler nasıl güncellenir?
+
+İlk veri kaynağı bu deponun `content/lessons.json` kataloğudur. Uygulama onu
+GitHub'ın HTTPS adresinden indirir; katalog Android kaynaklarından ayrıdır.
+Bu aşamada uzakta PostgreSQL/API sunucusu yoktur. Telefonun **SQLite** veritabanı
+son doğrulanmış katalog sürümünü ve tekrarlar için geçmiş dersleri saklar;
+ilerleme dosyası mevcut kullanıcılar için korunur. Room henüz kullanılmıyor.
+
+Uygulama her yeni açılışta, gün değişiminde ve altı saatten eski verilerle geri
+dönüldüğünde güncelleme dener. Üstteki **Dersleri güncelle** düğmesiyle de
+yenilenebilir. Ağ kesilmesi, hatalı JSON veya eksik ders alanları mevcut verinin
+üzerine yazmaz. Derslerin kimlikleri kalıcıdır; bir ders yayından kaldırılsa da
+önceden indirilmiş kopyası kelime defteri/tekrar için saklanır. Yeni ders seçimine
+yalnızca yayındaki dersler katılır. O gün seçilmiş kelime gün içinde değişmez.
+
+Agent taslağı onaylandıktan sonra:
+
+```powershell
+py -3 scripts/publish_lesson.py drafts/en-YENI-KELIME.json --reviewed
+py -3 scripts/validate_content.py
+git add content/lessons.json
+git commit -m "Publish new language lesson"
+git push origin main
+```
+
+**APK yeniden derlenmez.** Yalnızca içerik değişiklikleri `Lesson catalog checks`
+iş akışını çalıştırır. GitHub'ın önbelleği nedeniyle yayın hemen görünmeyebilir;
+biraz sonra uygulamadan yeniden güncelle. `content/` herkese açık ders içeriğidir;
+kullanıcı ilerlemesi veya gizli anahtar içermez. Katalog geçerli olarak boş veya
+tek dilli olabilir; henüz içerik olmayan dilde uygulama boş durum ekranı gösterir.
+
+İleride bir veritabanı API'si veya başka bir HTTPS barındırma hizmeti aynı
+`{ "version": 1, "lessons": [...] }` biçimini sunabilir. Kaynak adresi Gradle
+özelliğiyle yapılandırılır; bu yalnızca **sunucu adresi değiştiğinde** derlenir:
+
+```powershell
+.\gradlew.bat assembleDebug -PcatalogUrl=https://example.com/api/lessons
+```
+
+İndirme boyutu en fazla 2 MB'dır. Üretim sürümünde yalnızca HTTPS kabul edilir.
+Testler, dış ağa bağlı kalmadan yerel sahte HTTP sunucusu kullanır; test dersleri
+yalnızca test APK'sına girer.
 
 ## Android Studio ile çalıştırma
 
@@ -54,7 +98,8 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`.
 
 `main` dalına push, pull request veya elle başlatılan **Android checks and APK**
 iş akışı içerik testlerini, Android birim testlerini, lint ve debug APK derlemesini
-çalıştırır. Ardından API 35 emülatöründe arayüz testi çalışır.
+çalıştırır. Yalnızca `content/` değişmişse APK derlenmez. Ardından API 35
+emülatöründe arayüz ve uzaktan içerik güncelleme testleri çalışır.
 
 [Actions](https://github.com/burakotlu/BetterDo/actions) sayfasında başarılı çalışmayı
 açıp **BetterDo-debug-apk** artifact'ını indir ve ZIP'ten APK'yı çıkar.
@@ -86,7 +131,7 @@ süreç başlatmaz.
 ## İçerik üreten agent
 
 İsteğe bağlı Python aracı bilgisayardaki bir **Ollama** modeline bağlanır; telefonda
-model çalıştırmaz. Uygulama bu araca ihtiyaç duymadan hazır dersleri açar.
+model çalıştırmaz. Uygulama bu araca ihtiyaç duymadan yayınlanan dersleri indirir.
 Aracın protokolü [Ollama Chat API](https://docs.ollama.com/api/chat) ile uyumludur.
 
 1. Ollama'yı kur, seçtiğin modeli indir ve yerel servisi çalıştır.
@@ -109,19 +154,21 @@ py -3 scripts/validate_content.py
 py -3 -m unittest discover -s tests -v
 ```
 
-Yeni dersler APK'ya gömülür; telefona ulaşmaları için yeniden derleme ve güncelleme
-gerekir. Otomatik günlük bulut üretimi, bildirim, üyelik ve uzaktan ders indirme
-bu ilk sürümde yoktur. Gerçek model üretimi için çalışan bir Ollama servisi gerekir.
+Yeni dersler uzaktaki kataloğa yayınlanır; telefona ulaşmaları için yeniden APK
+derlemek gerekmez. Otomatik günlük bulut üretimi, bildirim ve üyelik henüz yoktur.
+Gerçek model üretimi için çalışan bir Ollama servisi gerekir.
 
 ## Testler ve yapı
 
 - `app/src/test/`: günlük dersin sabit kalması, tekrar aralıkları, seri, tarih
-  sınırları, JSON kayıt ve iki dilin bağımsızlığı.
+  sınırları, JSON kayıt, iki dilin bağımsızlığı, güncelleme/çevrimdışı katalog ve hatalı indirmeler.
 - `app/src/androidTest/`: dil değiştirme, quiz kilidi, ders tamamlama, Activity
-  yeniden oluşturma ve kelime defteri akışı. Gerçek cihazdaki ses kalitesini ölçmez.
+  yeniden oluşturma, kelime defteri ve aynı APK ile yeni içerik indirme akışı.
+  Gerçek cihazdaki ses kalitesini ölçmez.
 - `tests/`: içerik biçimi, hatalı/tekrarlanan taslaklar, güvenli yayınlama ve sahte
   model yanıtlarıyla agent düzeltme döngüsü.
-- `app/src/main/assets/lessons.json`: ders kataloğu.
+- `content/lessons.json`: uzaktan yayınlanan ders kataloğu; uygulama paketine girmez.
+- `app/src/androidTest/assets/lessons.json`: yalnızca test senaryoları için sabit örnekler.
 - `scripts/`: yalnızca Python standart kütüphanesini kullanan içerik araçları.
 
 Yerel içerik testleri Python 3.7+ ile çalışır; güncel Python 3 önerilir. Makinede

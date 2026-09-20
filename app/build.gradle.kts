@@ -11,11 +11,15 @@ android {
         applicationId = "com.burakotlu.betterdo"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        val catalogUrl = providers.gradleProperty("catalogUrl").getOrElse("https://raw.githubusercontent.com/burakotlu/BetterDo/main/content/lessons.json")
+        require(catalogUrl.startsWith("https://") && !catalogUrl.contains('"') && !catalogUrl.contains('\\') && !catalogUrl.contains('\n'))
+        buildConfigField("String", "CATALOG_URL", "\"$catalogUrl\"")
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
+    sourceSets.getByName("test").resources.srcDir("src/androidTest/assets")
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -39,5 +43,6 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
