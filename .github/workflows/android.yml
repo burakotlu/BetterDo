@@ -71,7 +71,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            status=0; bash ./gradlew connectedDebugAndroidTest || status=$?; adb pull /sdcard/Android/data/com.burakotlu.betterdo/files/screenshots app/build/reports/screenshots || true; exit "$status"
+            status=0; bash ./gradlew connectedDebugAndroidTest || status=$?; adb pull /sdcard/Download/betterdo-screenshots app/build/reports/screenshots || true; exit "$status"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

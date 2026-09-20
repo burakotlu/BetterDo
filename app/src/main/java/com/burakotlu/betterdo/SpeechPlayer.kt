@@ -11,10 +11,11 @@ import java.util.UUID
 class SpeechPlayer(context: Context, private val message: (String) -> Unit) {
     private val handler = Handler(Looper.getMainLooper())
     private var ready = false
+    private var failed = false
     private var closed = false
     private val engine = TextToSpeech(context.applicationContext) { status ->
         ready = status == TextToSpeech.SUCCESS
-        if (!ready && !closed) report("Ses motoru başlatılamadı. Android konuşma ayarlarını kontrol et.")
+        failed = !ready
     }
 
     init {
@@ -29,7 +30,10 @@ class SpeechPlayer(context: Context, private val message: (String) -> Unit) {
     private fun report(text: String) { handler.post { if (!closed) message(text) } }
 
     fun speak(text: String, language: String, slow: Boolean = false) {
-        if (!ready || closed) { report("Ses motoru henüz hazır değil. Birkaç saniye sonra tekrar dene."); return }
+        if (!ready || closed) {
+            report(if (failed) "Ses motoru başlatılamadı. Android konuşma ayarlarını kontrol et." else "Ses motoru henüz hazır değil. Birkaç saniye sonra tekrar dene.")
+            return
+        }
         val locale = if (language == "de") Locale.GERMANY else Locale.UK
         val support = engine.setLanguage(locale)
         if (support == TextToSpeech.LANG_MISSING_DATA || support == TextToSpeech.LANG_NOT_SUPPORTED) {
