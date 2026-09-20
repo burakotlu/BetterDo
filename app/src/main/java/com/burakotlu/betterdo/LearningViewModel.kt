@@ -1,0 +1,118 @@
+package com.burakotlu.betterdo
+
+import android.app.Application
+import android.util.AtomicFile
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.time.LocalDate
+
+data class LearningState(
+    val loading: Boolean = true,
+    val lessons: List<Lesson> = emptyList(),
+    val progress: LearningProgress = LearningProgress(),
+    val today: LocalDate = LocalDate.now(),
+    val answers: Map<String, Map<Int, Int>> = emptyMap(),
+    val message: String? = null,
+    val fatalError: Boolean = false,
+    val writable: Boolean = true
+) {
+    val language get() = progress.language
+    val catalog get() = lessons.filter { it.language == language }
+    val course get() = progress.courses.getValue(language)
+    val daily get() = catalog.takeIf { it.isNotEmpty() }?.let { Scheduler.daily(it, course, today) }
+    val due get() = Scheduler.due(catalog, course, today)
+}
+
+class LearningViewModel(application: Application) : AndroidViewModel(application) {
+    private val file = AtomicFile(File(application.filesDir, "progress-v1.json"))
+    private val mutex = Mutex()
+    private val mutable = MutableStateFlow(LearningState())
+    val state = mutable.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val lessonResult = withContext(Dispatchers.IO) { runCatching {
+                application.assets.open("lessons.json").bufferedReader(Charsets.UTF_8).use { JsonCodec.lessons(it.readText()) }
+            } }
+            if (lessonResult.isFailure) {
+                mutable.value = LearningState(loading = false, fatalError = true, message = "Ders dosyası okunamadı. Uygulamayı güncelleyip yeniden aç.")
+                return@launch
+            }
+            val progressResult = withContext(Dispatchers.IO) { runCatching {
+                if (file.baseFile.exists() || File(file.baseFile.path + ".bak").exists()) JsonCodec.decodeProgress(file.openRead().bufferedReader(Charsets.UTF_8).use { it.readText() })
+                else LearningProgress()
+            } }
+            mutable.value = LearningState(loading = false, lessons = lessonResult.getOrThrow(), progress = progressResult.getOrDefault(LearningProgress()),
+                writable = progressResult.isSuccess, message = if (progressResult.isFailure) "Kayıtlı ilerleme okunamadı. Üzerine yazılmadı; bu oturumdaki ilerleme kaydedilmeyecek." else null)
+            updateProgress { it }
+            while (true) {
+                delay(30_000)
+                refreshDate()
+            }
+        }
+    }
+
+    private fun pinDaily(progress: LearningProgress, lessons: List<Lesson>, today: LocalDate): LearningProgress {
+        val courses = progress.courses.mapValues { (lang, course) ->
+            val chosen = Scheduler.daily(lessons.filter { it.language == lang }, course, today)
+            course.copy(daily = course.daily + (today to chosen.id))
+        }
+        return progress.copy(courses = courses)
+    }
+
+    private suspend fun updateProgress(transform: (LearningProgress) -> LearningProgress) = mutex.withLock {
+        val current = mutable.value
+        val today = LocalDate.now()
+        val updated = pinDaily(transform(current.progress), current.lessons, today)
+        val write = if (current.writable) withContext(Dispatchers.IO) { runCatching {
+            val output = file.startWrite()
+            try {
+                output.write(JsonCodec.encodeProgress(updated).toByteArray(Charsets.UTF_8))
+                file.finishWrite(output)
+            } catch (error: Exception) { file.failWrite(output); throw error }
+        } } else null
+        mutable.value = mutable.value.copy(progress = updated, today = today,
+            answers = if (current.today == today) mutable.value.answers else emptyMap(),
+            message = if (write?.isFailure == true) "İlerlemen diske kaydedilemedi. Bu oturumu kapatınca son değişiklikler kaybolabilir." else mutable.value.message)
+    }
+
+    fun refreshDate() {
+        if (!mutable.value.loading && !mutable.value.fatalError && mutable.value.today != LocalDate.now()) viewModelScope.launch { updateProgress { it } }
+    }
+
+    fun changeLanguage(language: String) {
+        require(language in listOf("en", "de"))
+        viewModelScope.launch { updateProgress { it.copy(language = language) } }
+    }
+
+    fun answer(lesson: Lesson, question: Int, answer: Int) {
+        val current = mutable.value
+        val answers = current.answers[lesson.id].orEmpty() + (question to answer)
+        mutable.value = current.copy(answers = current.answers + (lesson.id to answers))
+    }
+
+    fun practice(lesson: Lesson, remembered: Boolean) {
+        val current = mutable.value
+        if (remembered && lesson.quiz.indices.any { current.answers[lesson.id]?.get(it) != lesson.quiz[it].answer }) return
+        viewModelScope.launch {
+            updateProgress { progress ->
+                val course = progress.courses.getValue(lesson.language)
+                progress.copy(courses = progress.courses + (lesson.language to Scheduler.practice(course, lesson.id, remembered, LocalDate.now())))
+            }
+            if (mutable.value.writable && mutable.value.message == null) {
+                mutable.value = mutable.value.copy(message = if (remembered) "Güzel bir adım! Kelimen tekrar planına eklendi." else "Pratik tamamlandı. Bu kelimeyi yarın tekrar edeceğiz.")
+            }
+        }
+    }
+
+    fun dismissMessage() { if (mutable.value.writable) mutable.value = mutable.value.copy(message = null) }
+}
