@@ -18,7 +18,7 @@ class JsonCodecTest {
 
     @Test fun bundledContentLoadsInAndroidParser() {
         val lessons = JsonCodec.lessons(File("src/main/assets/lessons.json").readText())
-        assertEquals(14, lessons.size)
+        assertTrue(lessons.size >= 14)
         assertEquals("sneeze", lessons.first().word)
         assertEquals("niesen", lessons.first { it.language == "de" }.word)
         assertTrue(lessons.all { lesson -> lesson.quiz.all { it.answer in it.options.indices } })

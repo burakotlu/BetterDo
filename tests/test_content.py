@@ -66,7 +66,7 @@ class ContentTests(unittest.TestCase):
             self.lesson.update(id="en-test-fixture", word="test fixture")
             draft.write_text(json.dumps(self.lesson), encoding="utf-8")
             self.assertEqual(publish(draft, catalog), "en-test-fixture")
-            self.assertEqual(len(load_catalog(catalog)["lessons"]), 15)
+            self.assertEqual(len(load_catalog(catalog)["lessons"]), len(self.catalog["lessons"]) + 1)
 
     @patch("generate_lesson.urlopen")
     def test_agent_repairs_bad_response(self, mock_urlopen):
