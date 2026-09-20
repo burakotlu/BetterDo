@@ -1,12 +1,15 @@
 # BetterDo development guide
 
-Build a native Android daily language-learning app for a Turkish speaker.
+Build a native Android daily language-learning app with an English interface.
 English is the primary course; German has equal support in the same architecture.
-The name is provisional. The product motto is “Kaydırmak yerine, bir kelime öğren.”
+The name is provisional. The product motto is “Learn a word instead of scrolling.”
 Do not add a web frontend or WebView shell. Use Kotlin and Jetpack Compose.
 
 ## Product rules
-- Keep the daily lesson short: one everyday word, Turkish meaning, three natural
+- Use English for code identifiers, filenames, comments, documentation, UI labels,
+  meanings, translations, usage notes, quiz instructions, and agent prompts.
+  Preserve German target-language words, examples, dialogues, and answer choices.
+- Keep the daily lesson short: one everyday word, an English definition, three natural
   examples, a short dialogue, and two quiz questions.
 - Preserve TalkBack labels, readable contrast, large touch targets, and font scaling.
 - Never silently reset saved progress. Keep progress isolated by language.

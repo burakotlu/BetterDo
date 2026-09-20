@@ -60,46 +60,46 @@ class LearningFlowTest {
         rule.waitUntil(10_000) { rule.onAllNodesWithText("sneeze").fetchSemanticsNodes().isNotEmpty() }
         screenshot("english-daily")
         rule.onNodeWithText("EN · English").performClick()
-        rule.onNodeWithText("Deutsch").performClick()
+        rule.onNodeWithText("German").performClick()
         rule.waitUntil(5_000) { rule.onAllNodesWithText("niesen").fetchSemanticsNodes().isNotEmpty() }
         screenshot("german-daily")
-        rule.onNodeWithText("DE · Deutsch").performClick()
+        rule.onNodeWithText("DE · German").performClick()
         rule.onNodeWithText("English").performClick()
         rule.waitUntil(5_000) { rule.onAllNodesWithText("sneeze").fetchSemanticsNodes().isNotEmpty() }
 
-        rule.onNodeWithText("Öğrendim").performScrollTo().assertIsNotEnabled()
+        rule.onNodeWithText("Mark as learned").performScrollTo().assertIsNotEnabled()
         val sneezeOptions = rule.onAllNodes(hasText("sneeze", substring = false) and hasClickAction())
         sneezeOptions[0].performScrollTo().performClick()
         sneezeOptions[1].performScrollTo().performClick()
-        rule.onNodeWithText("Öğrendim").performScrollTo().assertIsEnabled().performClick()
-        rule.onNodeWithText("Kelimelerim").performClick()
-        rule.waitUntil(10_000) { rule.onAllNodesWithText("Öğrenildi", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("Mark as learned").performScrollTo().assertIsEnabled().performClick()
+        rule.onNodeWithText("My words").performClick()
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("Learned", substring = true).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("sneeze").assertIsDisplayed()
         rule.activityRule.scenario.recreate()
-        rule.waitUntil(10_000) { rule.onAllNodesWithText("Öğrenildi", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("Learned", substring = true).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("sneeze").assertIsDisplayed()
         screenshot("word-library")
-        rule.onNodeWithText("Tekrar", substring = false).performClick()
-        rule.onNodeWithText("Şimdilik hepsi tamam.").assertIsDisplayed()
+        rule.onNodeWithText("Review", substring = false).performClick()
+        rule.onNodeWithText("You are all caught up.").assertIsDisplayed()
     }
 
     @Test fun sameApkDownloadsChangedLessonAndKeepsItOnNetworkFailure() {
         rule.waitUntil(15_000) { rule.onAllNodesWithText("sneeze").fetchSemanticsNodes().isNotEmpty() }
         val updated = JSONObject(responseBody)
-        updated.getJSONArray("lessons").getJSONObject(0).put("context", "Sunucudan güncellenen kullanım açıklaması.")
+        updated.getJSONArray("lessons").getJSONObject(0).put("context", "An updated usage note from the server.")
         val added = JSONObject(updated.getJSONArray("lessons").getJSONObject(0).toString()).put("id", "en-server-added").put("word", "server-added word")
         updated.getJSONArray("lessons").put(added)
         responseBody = updated.toString()
-        rule.onNodeWithContentDescription("Dersleri güncelle").performClick()
-        rule.waitUntil(15_000) { rule.onAllNodesWithText("Sunucudan güncellenen kullanım açıklaması.").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithContentDescription("Refresh lessons").performClick()
+        rule.waitUntil(15_000) { rule.onAllNodesWithText("An updated usage note from the server.").fetchSemanticsNodes().isNotEmpty() }
         CatalogDatabase(InstrumentationRegistry.getInstrumentation().targetContext).use { database ->
             val stored = database.read(server.url("/lessons.json").toString())!!
             org.junit.Assert.assertTrue(JsonCodec.lessons(stored.body).any { it.id == "en-server-added" })
         }
         statusCode = 503
-        rule.onNodeWithContentDescription("Dersleri güncelle").performClick()
-        rule.waitUntil(15_000) { rule.onAllNodesWithText("Dersler güncellenemedi.", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithContentDescription("Refresh lessons").performClick()
+        rule.waitUntil(15_000) { rule.onAllNodesWithText("Lessons could not be updated.", substring = true).fetchSemanticsNodes().isNotEmpty() }
         rule.activityRule.scenario.recreate()
-        rule.waitUntil(10_000) { rule.onAllNodesWithText("Sunucudan güncellenen kullanım açıklaması.").fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("An updated usage note from the server.").fetchSemanticsNodes().isNotEmpty() }
     }
 }

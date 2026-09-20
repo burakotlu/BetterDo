@@ -59,7 +59,7 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
             } }
             mutable.value = LearningState(loading = cached == null, lessons = cached?.lessons.orEmpty(), activeIds = cached?.activeIds.orEmpty(),
                 catalogReady = cached != null, lastSynced = cached?.checkedAt ?: 0, progress = progressResult.getOrDefault(LearningProgress()),
-                writable = progressResult.isSuccess, message = if (progressResult.isFailure) "Kayıtlı ilerleme okunamadı. Üzerine yazılmadı; bu oturumdaki ilerleme kaydedilmeyecek." else null)
+                writable = progressResult.isSuccess, message = if (progressResult.isFailure) "Saved progress could not be read and has not been overwritten. Progress in this session will not be saved." else null)
             if (cached != null) updateProgress { it }
             refreshCatalog()
             while (true) {
@@ -91,7 +91,7 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
         } } else null
         mutable.value = mutable.value.copy(progress = updated, today = today,
             answers = if (current.today == today) mutable.value.answers else emptyMap(),
-            message = if (write?.isFailure == true) "İlerlemen diske kaydedilemedi. Bu oturumu kapatınca son değişiklikler kaybolabilir." else mutable.value.message)
+            message = if (write?.isFailure == true) "Your progress could not be saved. Recent changes may be lost when you close this session." else mutable.value.message)
     }
 
     fun refreshDate() {
@@ -119,7 +119,7 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
                     lastSynced = fresh.checkedAt, syncError = null,
                     answers = current.answers.filterKeys { id -> current.lessons.find { it.id == id } == fresh.lessons.find { it.id == id } }
                 ) else current.copy(loading = false, syncing = false,
-                    syncError = if (current.catalogReady) "Dersler güncellenemedi. İndirilen derslerle devam edebilirsin." else "İlk dersleri indirmek için internet bağlantısı gerekiyor. Bağlantını kontrol edip yeniden dene.")
+                    syncError = if (current.catalogReady) "Lessons could not be updated. You can continue with downloaded lessons." else "An internet connection is needed to download your first lessons. Check your connection and try again.")
             }
             if (result.isSuccess) updateProgress { it }
         }
@@ -145,7 +145,7 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
                 progress.copy(courses = progress.courses + (lesson.language to Scheduler.practice(course, lesson.id, remembered, LocalDate.now())))
             }
             if (mutable.value.writable && mutable.value.message == null) {
-                mutable.value = mutable.value.copy(message = if (remembered) "Güzel bir adım! Kelimen tekrar planına eklendi." else "Pratik tamamlandı. Bu kelimeyi yarın tekrar edeceğiz.")
+                mutable.value = mutable.value.copy(message = if (remembered) "Nice progress! Your word has been added to your review schedule." else "Practice complete. This word will be ready to review tomorrow.")
             }
         }
     }

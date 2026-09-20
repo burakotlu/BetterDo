@@ -1,6 +1,8 @@
 package com.burakotlu.betterdo
 
 import android.os.Bundle
+import android.content.Context
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -41,6 +43,11 @@ private val Lime = Color(0xFFDEEDBA)
 private val Muted = Color(0xFF637460)
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        val configuration = Configuration(newBase.resources.configuration).apply { setLocale(Locale.ENGLISH) }
+        super.attachBaseContext(newBase.createConfigurationContext(configuration))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -86,15 +93,15 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
                 actions = {
                     IconButton(onClick = { model.refreshCatalog() }, enabled = !state.syncing && !state.loading) {
                         if (state.syncing) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                        else Icon(Icons.Outlined.Sync, contentDescription = "Dersleri güncelle")
+                        else Icon(Icons.Outlined.Sync, contentDescription = "Refresh lessons")
                     }
                     Box {
                         TextButton(onClick = { languageMenu = true }, enabled = !state.loading && !state.fatalError) {
-                            Text(if (state.language == "en") "EN · English" else "DE · Deutsch", fontSize = 13.sp)
-                            Icon(Icons.Outlined.ExpandMore, contentDescription = "Dil seç")
+                            Text(if (state.language == "en") "EN · English" else "DE · German", fontSize = 13.sp)
+                            Icon(Icons.Outlined.ExpandMore, contentDescription = "Choose a language")
                         }
                         DropdownMenu(expanded = languageMenu, onDismissRequest = { languageMenu = false }) {
-                            listOf("en" to "English", "de" to "Deutsch").forEach { (code, name) ->
+                            listOf("en" to "English", "de" to "German").forEach { (code, name) ->
                                 DropdownMenuItem(text = { Text(name) }, onClick = { speech.stop(); model.changeLanguage(code); languageMenu = false; selectedId = null })
                             }
                         }
@@ -103,7 +110,7 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
         },
         bottomBar = {
             NavigationBar(containerColor = Color.White) {
-                val labels = listOf("Bugün", "Tekrar", "Kelimelerim")
+                val labels = listOf("Today", "Review", "My words")
                 val icons = listOf(Icons.Outlined.WbSunny, Icons.Outlined.Refresh, Icons.Outlined.MenuBook)
                 labels.forEachIndexed { index, label ->
                     NavigationBarItem(selected = tab == index, enabled = !state.loading && !state.fatalError,
@@ -119,8 +126,8 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
             when {
                 state.loading -> CircularProgressIndicator(Modifier.padding(48.dp))
                 !state.catalogReady -> Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    EmptyCard("İlk derslerini indirelim", state.syncError ?: "Dersler internetten indirilir, sonra çevrimdışı kullanılabilir.")
-                    Button(onClick = { model.refreshCatalog() }, enabled = !state.syncing) { Text("Yeniden dene") }
+                    EmptyCard("Download your first lessons", state.syncError ?: "Download lessons online, then use them offline.")
+                    Button(onClick = { model.refreshCatalog() }, enabled = !state.syncing) { Text("Try again") }
                 }
                 else -> {
                     val selected = state.catalog.find { it.id == selectedId }
@@ -128,19 +135,19 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
                     if (lesson != null) {
                         key(lesson.id, state.today, tab) {
                             Column(Modifier.widthIn(max = 640.dp).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                                if (selected != null) TextButton(onClick = { selectedId = null }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null); Text(" Listeye dön") }
+                                if (selected != null) TextButton(onClick = { selectedId = null }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null); Text(" Back to the list") }
                                 else Intro(state)
                                 if (state.syncError != null) Text(state.syncError.orEmpty(), color = Muted, fontSize = 12.sp)
-                                if (!state.writable) Text("Kayıtlı ilerleme okunamadı. Bu oturumdaki değişiklikler kaydedilmiyor.", color = MaterialTheme.colorScheme.error)
+                                if (!state.writable) Text("Saved progress could not be read. Changes in this session are not being saved.", color = MaterialTheme.colorScheme.error)
                                 LessonContent(lesson, state, model, speech) { if (tab == 1) selectedId = null }
-                                Text("Bir anda değil. Her gün biraz.", color = Muted, fontSize = 12.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 20.dp))
+                                Text("A little progress, every day.", color = Muted, fontSize = 12.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 20.dp))
                             }
                         }
                     } else if (tab == 0) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            EmptyCard("Yeni dersler yolda", "Bu dilde henüz yayınlanmış ders yok. Diğer dili seçebilir veya dersleri güncelleyebilirsin.")
+                            EmptyCard("New lessons are on the way", "No lessons have been published in this language yet. Choose another language or refresh the lessons.")
                             state.syncError?.let { Text(it, color = Muted) }
-                            Button(onClick = { model.refreshCatalog() }, enabled = !state.syncing) { Text("Dersleri güncelle") }
+                            Button(onClick = { model.refreshCatalog() }, enabled = !state.syncing) { Text("Refresh lessons") }
                         }
                     } else {
                         val list = if (tab == 1) state.due else state.catalog.filter { it.id in state.course.cards }
@@ -155,14 +162,14 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
 @Composable
 private fun Intro(state: LearningState) {
     Column(verticalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.padding(top = 8.dp)) {
-        Text(state.today.format(DateTimeFormatter.ofPattern("d MMMM EEEE", Locale.forLanguageTag("tr"))).uppercase(Locale.forLanguageTag("tr")), fontSize = 10.sp, letterSpacing = 1.6.sp, color = Muted)
-        Text("Bugün, bir kelime daha.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
+        Text(state.today.format(DateTimeFormatter.ofPattern("d MMMM EEEE", Locale.ENGLISH)).uppercase(Locale.ENGLISH), fontSize = 10.sp, letterSpacing = 1.6.sp, color = Muted)
+        Text("One more word today.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
         Text(stringResource(R.string.app_motto), color = Muted, fontSize = 13.sp)
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Stat("${Scheduler.streak(state.course.activity, state.today)}", "günlük seri", Modifier.weight(1f))
-        Stat("${state.course.cards.values.count { it.learned }}", "öğrenilen", Modifier.weight(1f))
-        Stat("${state.due.size}", "tekrar", Modifier.weight(1f))
+        Stat("${Scheduler.streak(state.course.activity, state.today)}", "day streak", Modifier.weight(1f))
+        Stat("${state.course.cards.values.count { it.learned }}", "learned", Modifier.weight(1f))
+        Stat("${state.due.size}", "due", Modifier.weight(1f))
     }
 }
 
@@ -180,48 +187,48 @@ private fun Stat(value: String, label: String, modifier: Modifier) {
 private fun LessonContent(lesson: Lesson, state: LearningState, model: LearningViewModel, speech: SpeechPlayer, onDone: () -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = Forest), shape = RoundedCornerShape(24.dp)) {
         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("GÜNÜN KELİMESİ · ${lesson.level}", color = Lime, fontSize = 10.sp, letterSpacing = 1.4.sp)
+            Text("WORD OF THE DAY · ${lesson.level}", color = Lime, fontSize = 10.sp, letterSpacing = 1.4.sp)
             Text(lesson.word, color = Color.White, fontSize = 44.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.5).sp)
             Text("${lesson.pronunciation} · ${lesson.partOfSpeech}", color = Color(0xFFC5D6C7), fontSize = 12.sp)
             Text(lesson.meaning, color = Lime, fontSize = 22.sp)
             Text(lesson.context, color = Color(0xFFD0DED2), fontSize = 13.sp, lineHeight = 21.sp)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { speech.speak(lesson.word, lesson.language) }, colors = ButtonDefaults.buttonColors(containerColor = Lime, contentColor = Forest), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)) {
-                    Icon(Icons.AutoMirrored.Outlined.VolumeUp, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Dinle")
+                    Icon(Icons.AutoMirrored.Outlined.VolumeUp, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Listen")
                 }
-                TextButton(onClick = { speech.speak(lesson.word, lesson.language, true) }, colors = ButtonDefaults.textButtonColors(contentColor = Lime)) { Text("Yavaş dinle") }
+                TextButton(onClick = { speech.speak(lesson.word, lesson.language, true) }, colors = ButtonDefaults.textButtonColors(contentColor = Lime)) { Text("Listen slowly") }
             }
         }
     }
-    Panel("Hayatın içinden", "Kelimeler cümlelerin içinde akılda kalır.") {
+    Panel("Everyday examples", "Words are easier to remember in context.") {
         lesson.examples.forEachIndexed { index, example ->
             if (index > 0) HorizontalDivider(color = Color(0xFFEDF0E9))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("0${index + 1}", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(end = 12.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Text(example.text, fontSize = 15.sp)
-                    Text(example.translation, fontSize = 12.sp, color = Muted)
+                    if (example.translation != example.text) Text(example.translation, fontSize = 12.sp, color = Muted)
                 }
-                IconButton(onClick = { speech.speak(example.text, lesson.language) }) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, "${index + 1}. örneği dinle", tint = Muted) }
+                IconButton(onClick = { speech.speak(example.text, lesson.language) }) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, "Listen to example ${index + 1}", tint = Muted) }
             }
         }
     }
-    Panel("Küçük bir sohbet", lesson.dialogueContext, Color(0xFFEDF1E4)) {
+    Panel("A short conversation", lesson.dialogueContext, Color(0xFFEDF1E4)) {
         lesson.dialogue.forEach { line ->
             Row(verticalAlignment = Alignment.Top) {
                 Text(line.speaker, fontWeight = FontWeight.Bold, color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 14.dp, end = 10.dp))
                 Surface(Modifier.weight(1f), color = Color.White, shape = RoundedCornerShape(12.dp)) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text(line.text, fontSize = 14.sp)
-                        Text(line.translation, fontSize = 12.sp, color = Muted)
+                        if (line.translation != line.text) Text(line.translation, fontSize = 12.sp, color = Muted)
                     }
                 }
-                IconButton(onClick = { speech.speak(line.text, lesson.language) }) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, "${line.speaker} kişisinin cümlesini dinle", tint = Muted) }
+                IconButton(onClick = { speech.speak(line.text, lesson.language) }) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, "Listen to speaker ${line.speaker}", tint = Muted) }
             }
         }
     }
     val answers = state.answers[lesson.id].orEmpty()
-    Panel("Bir de sen dene", "İki küçük soruyla öğrendiğini pekiştir.") {
+    Panel("Your turn", "Check what you learned with two quick questions.") {
         lesson.quiz.forEachIndexed { index, quiz ->
             Text("${index + 1}. ${quiz.question}", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             quiz.options.forEachIndexed { optionIndex, option ->
@@ -229,23 +236,23 @@ private fun LessonContent(lesson: Lesson, state: LearningState, model: LearningV
                 val color = if (!chosen) Color.White else if (optionIndex == quiz.answer) Lime else Color(0xFFFFE5DC)
                 OutlinedButton(onClick = { model.answer(lesson, index, optionIndex) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.outlinedButtonColors(containerColor = color), contentPadding = PaddingValues(12.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        if (chosen) { Icon(if (optionIndex == quiz.answer) Icons.Outlined.Check else Icons.Outlined.Close, if (optionIndex == quiz.answer) "Doğru cevap" else "Yanlış cevap", Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)) }
+                        if (chosen) { Icon(if (optionIndex == quiz.answer) Icons.Outlined.Check else Icons.Outlined.Close, if (optionIndex == quiz.answer) "Correct answer" else "Incorrect answer", Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)) }
                         Text(option, fontSize = 13.sp)
                     }
                 }
             }
             answers[index]?.let { answer ->
-                Text(if (answer == quiz.answer) "Doğru! ${quiz.explanation}" else "Henüz değil. Örneklere bakıp yeniden dene.", color = if (answer == quiz.answer) Muted else Color(0xFF98442E), fontSize = 12.sp)
+                Text(if (answer == quiz.answer) "Correct! ${quiz.explanation}" else "Not quite. Check the examples and try again.", color = if (answer == quiz.answer) Muted else Color(0xFF98442E), fontSize = 12.sp)
             }
         }
     }
     val practiced = state.course.cards[lesson.id]?.lastPracticed == state.today
-    if (practiced) Text("Bugünkü pratik tamamlandı. Sonraki tekrar: ${state.course.cards.getValue(lesson.id).due.format(DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("tr")))}", color = Muted, fontSize = 13.sp)
+    if (practiced) Text("Today’s practice is complete. Next review: ${state.course.cards.getValue(lesson.id).due.format(DateTimeFormatter.ofPattern("d MMMM", Locale.ENGLISH))}", color = Muted, fontSize = 13.sp)
     Button(onClick = { model.practice(lesson, true); onDone() }, enabled = lesson.quiz.indices.all { answers[it] == lesson.quiz[it].answer }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-        Icon(Icons.Outlined.Check, null); Spacer(Modifier.width(8.dp)); Text("Öğrendim")
+        Icon(Icons.Outlined.Check, null); Spacer(Modifier.width(8.dp)); Text("Mark as learned")
     }
-    OutlinedButton(onClick = { model.practice(lesson, false); onDone() }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Yarın tekrar et") }
-    Text("“Öğrendim” için iki soruyu da doğru yanıtla. Tekrar aralıkları: 1, 3, 7, 14, 30 ve 60 gün.", color = Muted, fontSize = 11.sp)
+    OutlinedButton(onClick = { model.practice(lesson, false); onDone() }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Review tomorrow") }
+    Text("Answer both questions correctly to mark this word as learned. Review intervals: 1, 3, 7, 14, 30, and 60 days.", color = Muted, fontSize = 11.sp)
 }
 
 @Composable
@@ -263,21 +270,21 @@ private fun Panel(title: String, subtitle: String, color: Color = Color.White, c
 private fun WordList(lessons: List<Lesson>, state: LearningState, review: Boolean, select: (Lesson) -> Unit, goToday: () -> Unit) {
     var search by rememberSaveable(state.language, review) { mutableStateOf("") }
     Column(Modifier.widthIn(max = 640.dp).fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Text(if (review) "Küçük bir hatırlatma." else "Senin kelimelerin.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(if (review) "A quick refresher." else "Your word library.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         if (lessons.isEmpty()) {
-            EmptyCard(if (review) "Şimdilik hepsi tamam." else "İlk kelimen seni bekliyor.", if (review) "Zamanı gelen tekrarın yok. Öğrendiklerin tekrar günü gelince burada görünecek." else "Bir dersi tamamla; kelime defterin burada büyüsün.")
-            Button(onClick = goToday) { Text("Bugünün dersine dön") }
+            EmptyCard(if (review) "You are all caught up." else "Your first word is waiting.", if (review) "No reviews are due. Your words will appear here when it is time to review them." else "Complete a lesson to start building your word library.")
+            Button(onClick = goToday) { Text("Back to today’s lesson") }
         } else {
-            OutlinedTextField(value = search, onValueChange = { search = it }, label = { Text("Kelime veya anlam ara") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp))
+            OutlinedTextField(value = search, onValueChange = { search = it }, label = { Text("Search words or meanings") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp))
             val matches = lessons.filter { it.word.contains(search, ignoreCase = true) || it.meaning.contains(search, ignoreCase = true) }
-            if (matches.isEmpty()) Text("Eşleşen kelime yok.", color = Muted)
+            if (matches.isEmpty()) Text("No matching words.", color = Muted)
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 20.dp)) {
                 items(matches, key = { it.id }) { lesson ->
                     Card(onClick = { select(lesson) }, colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                             Text(lesson.word, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                             Text(lesson.meaning, color = Muted, fontSize = 13.sp)
-                            state.course.cards[lesson.id]?.let { card -> Text("${if (card.learned) "Öğrenildi" else "Pratik yapılıyor"} · Tekrar: ${card.due}", fontSize = 11.sp, color = Muted) }
+                            state.course.cards[lesson.id]?.let { card -> Text("${if (card.learned) "Learned" else "Practicing"} · Review: ${card.due}", fontSize = 11.sp, color = Muted) }
                         }
                     }
                 }
