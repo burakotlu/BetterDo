@@ -135,11 +135,22 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
                     if (lesson != null) {
                         key(lesson.id, state.today, tab) {
                             Column(Modifier.widthIn(max = 640.dp).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                                if (selected != null) TextButton(onClick = { selectedId = null }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null); Text(" Back to the list") }
-                                else Intro(state)
+                                if (selected != null) TextButton(onClick = { selectedId = null; speech.stop() }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null); Text(if (tab == 0) " Back to today's word" else " Back to the list") }
+                                if (tab == 0) Intro(state)
                                 if (state.syncError != null) Text(state.syncError.orEmpty(), color = Muted, fontSize = 12.sp)
                                 if (!state.writable) Text("Saved progress could not be read. Changes in this session are not being saved.", color = MaterialTheme.colorScheme.error)
                                 LessonContent(lesson, state, model, speech) { if (tab == 1) selectedId = null }
+                                if (tab == 0 && state.course.cards[lesson.id]?.lastPracticed == state.today) {
+                                    val next = Scheduler.nextUnseen(state.available, state.course)
+                                    if (next != null) {
+                                        Button(onClick = { speech.stop(); selectedId = next.id }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                                            Text("Learn another word")
+                                        }
+                                    } else {
+                                        EmptyCard("You have explored every published word", "There is no daily limit. Refresh for newly published lessons, or revisit your words while more lessons are added.")
+                                        OutlinedButton(onClick = { selectedId = null; tab = 2; speech.stop() }, modifier = Modifier.fillMaxWidth()) { Text("Explore my words") }
+                                    }
+                                }
                                 Text("A little progress, every day.", color = Muted, fontSize = 12.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 20.dp))
                             }
                         }
@@ -165,6 +176,9 @@ private fun Intro(state: LearningState) {
         Text(state.today.format(DateTimeFormatter.ofPattern("d MMMM EEEE", Locale.ENGLISH)).uppercase(Locale.ENGLISH), fontSize = 10.sp, letterSpacing = 1.6.sp, color = Muted)
         Text("One more word today.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
         Text(stringResource(R.string.app_motto), color = Muted, fontSize = 13.sp)
+        val practiced = Scheduler.practicedToday(state.course, state.today)
+        Text(if (practiced == 0) "Daily minimum: practice 1 word. Keep going whenever you like."
+            else "Daily goal reached! $practiced ${if (practiced == 1) "word" else "words"} practiced today. No daily limit.", color = Muted, fontSize = 13.sp)
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Stat("${Scheduler.streak(state.course.activity, state.today)}", "day streak", Modifier.weight(1f))
@@ -187,7 +201,7 @@ private fun Stat(value: String, label: String, modifier: Modifier) {
 private fun LessonContent(lesson: Lesson, state: LearningState, model: LearningViewModel, speech: SpeechPlayer, onDone: () -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = Forest), shape = RoundedCornerShape(24.dp)) {
         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("WORD OF THE DAY · ${lesson.level}", color = Lime, fontSize = 10.sp, letterSpacing = 1.4.sp)
+            Text("WORD PRACTICE · ${lesson.level}", color = Lime, fontSize = 10.sp, letterSpacing = 1.4.sp)
             Text(lesson.word, color = Color.White, fontSize = 44.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.5).sp)
             Text("${lesson.pronunciation} · ${lesson.partOfSpeech}", color = Color(0xFFC5D6C7), fontSize = 12.sp)
             Text(lesson.meaning, color = Lime, fontSize = 22.sp)

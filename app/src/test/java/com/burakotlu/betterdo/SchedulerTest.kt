@@ -79,4 +79,27 @@ class SchedulerTest {
         val progress = Scheduler.practice(CourseProgress(), "one", true, end)
         assertEquals(LocalDate.of(2027, 1, 1), progress.cards.getValue("one").due)
     }
+
+    @Test fun extraWordsKeepDailyPinAndGetIndependentReviews() {
+        val lessons = listOf(lesson("one"), lesson("two"))
+        val first = Scheduler.practice(CourseProgress(daily = mapOf(today to "one")), "one", true, today)
+        assertEquals("two", Scheduler.nextUnseen(lessons, first)?.id)
+        val second = Scheduler.practice(first, "two", false, today)
+        assertEquals("one", Scheduler.daily(lessons, second, today).id)
+        assertEquals(2, Scheduler.practicedToday(second, today))
+        assertEquals(1, Scheduler.streak(second.activity, today))
+        assertEquals(listOf("one", "two"), Scheduler.due(lessons, second, today.plusDays(1)).map { it.id })
+        assertNull(Scheduler.nextUnseen(lessons, second))
+        assertEquals(0, Scheduler.practicedToday(second, today.plusDays(1)))
+        assertEquals(2, Scheduler.practicedToday(Scheduler.practice(second, "two", true, today), today))
+    }
+
+    @Test fun extraLessonSelectionUsesOnlyAvailableCourseLessons() {
+        val english = Scheduler.practice(CourseProgress(), "en-one", true, today)
+        val german = CourseProgress()
+        assertNull(Scheduler.nextUnseen(emptyList(), english))
+        assertEquals("en-two", Scheduler.nextUnseen(listOf(lesson("en-two")), english)?.id)
+        assertEquals("de-one", Scheduler.nextUnseen(listOf(lesson("de-one").copy(language = "de")), german)?.id)
+        assertEquals(0, Scheduler.practicedToday(german, today))
+    }
 }

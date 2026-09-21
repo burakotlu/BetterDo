@@ -11,7 +11,8 @@ defined in `app/src/main/res/values/strings.xml`.
 
 ## Features
 
-- One daily word per language, with IPA pronunciation, an English definition, and usage notes.
+- A daily minimum of one word per language, with optional extra lessons and no daily cap.
+- IPA pronunciation, an English definition, and usage notes for every word.
 - Three examples, a short conversation, and two quiz questions per lesson.
 - Normal and slow pronunciation using Android TextToSpeech.
 - Review intervals of 1, 3, 7, 14, 30, and 60 days.
@@ -24,6 +25,12 @@ English example translations that duplicate the original sentence are hidden.
 
 A daily word stays selected for the rest of the day. The next day selects the
 first unseen published word, or the earliest review when all words have been seen.
+After practicing a word, select **Learn another word** to open the next unseen
+published lesson. Extra words have their own saved progress and review dates.
+The daily goal counts distinct words practiced, including reviews and words marked
+**Review tomorrow**; repeating the same word does not increase this count.
+Each language has its own goal. When all published words have been explored, the
+app offers the word library and explains that more content must be published.
 Answer both quiz questions correctly to enable **Mark as learned**. Repeated
 practice on the same day does not inflate the streak or review interval.
 Scheduling follows the phone's local calendar; changing its clock affects dates.

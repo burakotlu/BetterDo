@@ -83,6 +83,21 @@ class LearningFlowTest {
         rule.onNodeWithText("You are all caught up.").assertIsDisplayed()
     }
 
+    @Test fun extraWordsAreAvailableTheSameDayAndPersist() {
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("sneeze").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("Review tomorrow").performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Learn another word").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("Learn another word").performScrollTo().performClick()
+        rule.onNodeWithText("errand", substring = false).assertExists()
+        rule.onNodeWithText("Review tomorrow").performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("2 words practiced today", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("My words").performClick()
+        rule.activityRule.scenario.recreate()
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("errand", substring = false).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("sneeze", substring = false).assertExists()
+        rule.onNodeWithText("errand", substring = false).assertExists()
+    }
+
     @Test fun sameApkDownloadsChangedLessonAndKeepsItOnNetworkFailure() {
         rule.waitUntil(15_000) { rule.onAllNodesWithText("sneeze").fetchSemanticsNodes().isNotEmpty() }
         val updated = JSONObject(responseBody)

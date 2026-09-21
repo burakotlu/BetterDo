@@ -11,6 +11,8 @@ Do not add a web frontend or WebView shell. Use Kotlin and Jetpack Compose.
   Preserve German target-language words, examples, dialogues, and answer choices.
 - Keep the daily lesson short: one everyday word, an English definition, three natural
   examples, a short dialogue, and two quiz questions.
+- One word is the daily minimum, not a cap. Offer extra published lessons and keep
+  each word's progress and review schedule independent.
 - Preserve TalkBack labels, readable contrast, large touch targets, and font scaling.
 - Never silently reset saved progress. Keep progress isolated by language.
 - Do not expose model credentials in frontend files or commit secrets.

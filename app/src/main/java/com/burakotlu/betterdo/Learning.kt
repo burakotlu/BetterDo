@@ -25,6 +25,12 @@ data class LearningProgress(
 object Scheduler {
     private val intervals = listOf(1L, 3L, 7L, 14L, 30L, 60L)
 
+    fun nextUnseen(lessons: List<Lesson>, progress: CourseProgress): Lesson? =
+        lessons.firstOrNull { it.id !in progress.cards }
+
+    fun practicedToday(progress: CourseProgress, today: LocalDate): Int =
+        progress.cards.values.count { it.lastPracticed == today }
+
     fun daily(lessons: List<Lesson>, progress: CourseProgress, today: LocalDate): Lesson {
         require(lessons.isNotEmpty())
         return lessons.find { it.id == progress.daily[today] }
