@@ -64,6 +64,9 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BetterDoApp(model: LearningViewModel = viewModel()) {
+    val videoSettings: VideoSettings = viewModel()
+    var showVideoSettings by remember { mutableStateOf(false) }
+    if (showVideoSettings) VideoSettingsDialog(videoSettings) { showVideoSettings = false }
     val state by model.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -140,6 +143,7 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
                                 if (state.syncError != null) Text(state.syncError.orEmpty(), color = Muted, fontSize = 12.sp)
                                 if (!state.writable) Text("Saved progress could not be read. Changes in this session are not being saved.", color = MaterialTheme.colorScheme.error)
                                 LessonContent(lesson, state, model, speech) { if (tab == 1) selectedId = null }
+                                AiVideoSection(lesson, videoSettings, { showVideoSettings = true }, { speech.stop() })
                                 if (tab == 0 && state.course.cards[lesson.id]?.lastPracticed == state.today) {
                                     val next = Scheduler.nextUnseen(state.available, state.course)
                                     if (next != null) {

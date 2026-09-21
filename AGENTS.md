@@ -30,6 +30,11 @@ Do not add a web frontend or WebView shell. Use Kotlin and Jetpack Compose.
 - `scripts/publish_lesson.py`: accepts a reviewed draft into the remote catalog.
   Publishing content must not require rebuilding the APK.
 - `tests/`: Python standard-library tests for content and agent validation.
+- `server/`: optional private video API, SQLite job queue, and worker. Provider keys
+  stay here. Mock mode must work without paid services. See `server/README.md`.
+- Video generation is explicit, deduplicated, and budgeted. Completed videos are
+  reused; opening a lesson only reads status. Never reset video jobs to retry an
+  ambiguous paid submission without reconciling its provider ID/idempotency key.
 
 ## Validation
 Run `py -3 -m unittest discover -s tests -v` and

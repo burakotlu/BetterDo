@@ -154,6 +154,28 @@ existing drafts. Validation does not establish linguistic accuracy: review the
 English definitions, translations, IPA, natural usage, and quiz answers before
 publishing. Automatic daily cloud generation, reminders, and accounts are not included.
 
+## AI lesson videos
+
+Each lesson now has an **AI Video** section with generation, status, retry,
+transcript, and native 9:16 playback. An optional Python/SQLite server runs the
+durable job queue; provider keys stay on that server. Existing lesson caching and
+learning progress are unchanged. Reviewed definitions/examples produce a short
+teaching script without another language-model dependency.
+
+For free local development, copy `.env.example` to `.env`, set a random
+`VIDEO_API_TOKEN`, leave `AI_VIDEO_PROVIDER=mock`, and run
+`py -3 -m server --env-file .env`. In the Android debug app's **Video settings**,
+enter `http://10.0.2.2:8080` for the emulator and that service token. Mock mode
+simulates the job lifecycle and plays a local sample, without AI charges.
+
+Real rendering requires `AI_VIDEO_PROVIDER=heygen`, `AI_VIDEO_API_KEY`,
+`AI_TEACHER_AVATAR_ID`, `AI_TEACHER_VOICE_ID`, and server-side FFmpeg. All routes
+are authenticated; duplicate/completed jobs are reused and `VIDEO_DAILY_LIMIT`
+caps new submissions. No public backend is deployed automatically.
+
+See [video service setup](server/README.md) for configuration, Docker deployment,
+API/database details, tests, and how to add a provider in `server/providers/`.
+
 ## Tests and project layout
 
 - `app/src/test/`: scheduling, streaks, persistence, language isolation, remote
