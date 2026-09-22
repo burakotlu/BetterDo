@@ -49,6 +49,7 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
     private val generatedRepository = CatalogRepository("generated-lessons", database, CatalogClient { error("Use the lesson service") })
     private var syncJob: Job? = null
     private var lessonService: VideoApi? = null
+    private var initialized = false
     private val mutable = MutableStateFlow(LearningState())
     val state = mutable.asStateFlow()
 
@@ -63,6 +64,7 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
             mutable.value = LearningState(loading = cached == null && generated == null, lessons = (cached?.lessons.orEmpty() + generated?.lessons.orEmpty()).distinctBy { it.id }, activeIds = cached?.activeIds.orEmpty() + generated?.activeIds.orEmpty(),
                 catalogReady = cached != null || generated != null, lastSynced = cached?.checkedAt ?: 0, progress = progressResult.getOrDefault(LearningProgress()),
                 writable = progressResult.isSuccess, message = if (progressResult.isFailure) "Saved progress could not be read and has not been overwritten. Progress in this session will not be saved." else null)
+            initialized = true
             if (cached != null) updateProgress { it }
             refreshCatalog()
             while (true) {
@@ -110,6 +112,7 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun refreshCatalog() {
+        if (!initialized) return
         if (syncJob?.isActive == true) return
         val api = lessonService
         val legacyTest = BuildConfig.DEBUG && getApplication<Application>().getSharedPreferences("catalog", 0).contains("test_url")
