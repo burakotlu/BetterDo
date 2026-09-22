@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "content/lessons.json"
+LEVELS = ("A1", "A2", "B1", "B2", "C1", "C2")
 
 
 def text(value, field, maximum=1200):
@@ -25,8 +26,8 @@ def validate_lesson(lesson):
         raise ValueError("language must be en or de")
     if not re.fullmatch(lesson["language"] + r"-[a-z0-9]+(?:-[a-z0-9]+)*", lesson["id"]):
         raise ValueError("id must be a language-prefixed slug")
-    if lesson["level"] not in ("A1", "A2", "B1"):
-        raise ValueError("level must be A1, A2, or B1")
+    if lesson["level"] not in LEVELS:
+        raise ValueError("level must be A1, A2, B1, B2, C1, or C2")
     for field, low, high in (("examples", 3, 3), ("dialogue", 3, 5), ("quiz", 2, 2)):
         items = lesson.get(field)
         if not isinstance(items, list) or not low <= len(items) <= high:

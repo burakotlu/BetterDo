@@ -27,7 +27,7 @@ object JsonCodec {
             require(lessons.size <= 10000)
             require(lessons.all { lesson ->
                 lesson.language in setOf("en", "de") && lesson.id.matches(Regex("${lesson.language}-[a-z0-9]+(?:-[a-z0-9]+)*")) &&
-                    lesson.level in setOf("A1", "A2", "B1") &&
+                    lesson.level in LanguageLevels.labels &&
                     listOf(lesson.id, lesson.word, lesson.pronunciation, lesson.meaning, lesson.partOfSpeech, lesson.category, lesson.context, lesson.dialogueContext).all(::validText) &&
                     lesson.examples.size == 3 && lesson.examples.all { validText(it.text) && validText(it.translation) } &&
                     lesson.dialogue.size in 3..5 && lesson.dialogue.all { it.speaker in setOf("A", "B") && validText(it.text) && validText(it.translation) } &&

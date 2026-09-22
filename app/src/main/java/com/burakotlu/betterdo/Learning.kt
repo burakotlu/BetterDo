@@ -2,6 +2,13 @@ package com.burakotlu.betterdo
 
 import java.time.LocalDate
 
+object LanguageLevels {
+    val labels = linkedMapOf(
+        "A1" to "Beginner", "A2" to "Elementary", "B1" to "Intermediate",
+        "B2" to "Upper intermediate", "C1" to "Advanced", "C2" to "Proficient"
+    )
+}
+
 data class Example(val text: String, val translation: String)
 data class DialogueLine(val speaker: String, val text: String, val translation: String)
 data class Quiz(val question: String, val options: List<String>, val answer: Int, val explanation: String)

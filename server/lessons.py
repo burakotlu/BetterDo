@@ -4,7 +4,7 @@ import threading
 import time
 import uuid
 from scripts.generate_lesson import generate
-from scripts.validate_content import validate_lesson
+from scripts.validate_content import LEVELS, validate_lesson
 
 CATEGORIES = [
     {"id": "daily-life", "title": "Daily life", "description": "Useful words for everyday conversations"},
@@ -23,7 +23,7 @@ class LessonService:
         self.lock = threading.Lock()
 
     def categories(self):
-        return {"categories": CATEGORIES, "generationEnabled": bool(self.model), "levels": ["A1", "A2", "B1"]}
+        return {"categories": CATEGORIES, "generationEnabled": bool(self.model), "levels": list(LEVELS)}
 
     def get(self, identity):
         with self.database.connect() as db:
@@ -42,7 +42,7 @@ class LessonService:
     def create(self, identity, language, category, level):
         if not isinstance(identity, str) or len(identity) != 32 or any(c not in "0123456789abcdef" for c in identity):
             raise ValueError("Invalid lesson request ID")
-        if language not in ("en", "de") or category not in [item["id"] for item in CATEGORIES] or level not in ("A1", "A2", "B1"):
+        if language not in ("en", "de") or category not in [item["id"] for item in CATEGORIES] or level not in LEVELS:
             raise ValueError("Choose a supported language, category, and level")
         if not self.model:
             raise ValueError("The server needs AI_LESSON_MODEL and a running Ollama service")

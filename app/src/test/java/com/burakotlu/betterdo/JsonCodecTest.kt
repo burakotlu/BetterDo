@@ -6,6 +6,16 @@ import java.io.File
 import java.time.LocalDate
 
 class JsonCodecTest {
+    @Test fun allLanguageLevelsAreAcceptedAndUnknownLevelsRejected() {
+        val root = org.json.JSONObject(javaClass.classLoader!!.getResource("lessons.json")!!.readText())
+        for (level in LanguageLevels.labels.keys) {
+            val lessons = root.getJSONArray("lessons")
+            for (index in 0 until lessons.length()) lessons.getJSONObject(index).put("level", level)
+            assertTrue(JsonCodec.lessons(root.toString()).all { it.level == level })
+        }
+        root.getJSONArray("lessons").getJSONObject(0).put("level", "C3")
+        assertThrows(IllegalArgumentException::class.java) { JsonCodec.lessons(root.toString()) }
+    }
     @Test fun savedProgressRoundTripsWithIndependentLanguages() {
         val course = Scheduler.practice(CourseProgress(daily = mapOf(LocalDate.of(2026, 9, 20) to "en-sneeze")), "en-sneeze", true, LocalDate.of(2026, 9, 20))
         val state = LearningProgress("de", mapOf("en" to course, "de" to CourseProgress()))

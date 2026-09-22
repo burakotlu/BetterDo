@@ -12,6 +12,8 @@ from server.config import Config
 from server.media import VideoMedia
 from server.providers.mock import MockVideoGenerationProvider
 from server.service import VideoService
+from server.teaching import generate_teaching_script
+from scripts.validate_content import LEVELS
 
 
 class LessonServiceTests(unittest.TestCase):
@@ -107,6 +109,32 @@ class LessonServiceTests(unittest.TestCase):
         self.assertFalse(self.service.categories()["generationEnabled"])
         with self.assertRaisesRegex(ValueError, "AI_LESSON_MODEL"):
             self.create()
+
+    def test_all_levels_generate_and_support_video_scripts_in_both_languages(self):
+        fixtures = json.loads(Path("app/src/androidTest/assets/lessons.json").read_text(encoding="utf-8"))["lessons"]
+        for language in ("en", "de"):
+            for index, level in enumerate(LEVELS):
+                with self.subTest(language=language, level=level):
+                    lesson = copy.deepcopy(next(item for item in fixtures if item["language"] == language))
+                    lesson["level"] = level
+                    lesson["word"] += " " + level
+                    self.generator.side_effect = lambda *args, **kwargs: copy.deepcopy(lesson)
+                    identity = (language.encode().hex() + str(index)).ljust(32, "0")
+                    self.service.create(identity, language, "travel", level)
+                    self.service.tick()
+                    job = self.service.get(identity)
+                    self.assertEqual("completed", job["status"])
+                    self.assertEqual(level, job["lesson"]["level"])
+                    self.assertEqual(level, self.generator.call_args[1]["level"])
+                    self.assertTrue(generate_teaching_script(lesson["word"], lesson["meaning"], [line["text"] for line in lesson["examples"]], level))
+
+    def test_wrong_generated_level_is_rejected(self):
+        self.service.create("a" * 32, "en", "travel", "C2")
+        self.service.tick()
+        self.assertEqual("failed", self.service.get("a" * 32)["status"])
+        self.assertEqual([], self.service.catalog()["lessons"])
+        with self.assertRaises(ValueError):
+            self.service.create("b" * 32, "en", "travel", "C3")
 
     def test_generated_lesson_can_request_video_without_static_catalog(self):
         self.create()

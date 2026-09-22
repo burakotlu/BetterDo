@@ -11,6 +11,8 @@ In Docker, localhost is the container: use your Ollama service name or
 authenticated BetterDo backend should expose generation to clients.
 
 - `GET /api/categories`: supported topics, levels, and generation availability.
+- Supported levels are A1, A2, B1, B2, C1, and C2 for both English and German.
+  The generator uses level-specific guidance and rejects output with a different level.
 - `POST /api/lesson-jobs`: `{ "id": "<32 lowercase hex characters>", "language":
   "en", "category": "travel", "level": "A1" }`; returns immediately with a job.
 - `GET /api/lesson-jobs/{id}`: pending/processing/completed/failed and the final lesson.

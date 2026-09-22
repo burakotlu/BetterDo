@@ -1,12 +1,12 @@
 """Deterministic scripts reuse reviewed lessons; no second language model is needed."""
 import re
-from scripts.validate_content import text
+from scripts.validate_content import LEVELS, text
 
 
 def generate_teaching_script(word, definition, examples, level):
     for value in (word, definition):
         text(value, "Teaching script text")
-    if level not in ("A1", "A2", "B1") or len(examples) < 2:
+    if level not in LEVELS or len(examples) < 2:
         raise ValueError("A valid level and two examples are required")
     for example in examples[:2]:
         text(example, "Example")

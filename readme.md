@@ -184,11 +184,18 @@ API/database details, tests, and how to add a provider in `server/providers/`.
 ## Generate lessons by topic
 
 Open **Explore topics** (the sparkle button), choose a suggested category and
-**A1 / A2 / B1**, then tap **Create lesson**. English and German share the same
+**A1 / A2 / B1 / B2 / C1 / C2** in **Language level**, then tap **Create lesson**. English and German share the same
 workflow. The backend creates the lesson asynchronously with Ollama, validates its
 structure/language/level, rejects duplicate words, and saves it in SQLite. Open the
 finished lesson to cache it on the phone, practice, listen, take the quiz, or request
 an AI video. **Refresh lessons** retrieves the live generated catalog after connecting.
+
+The level selector shows descriptive labels from Beginner to Proficient and remembers
+the last selection separately for English and German. Only levels supported by the
+connected server are offered. The requested level guides vocabulary and sentence
+complexity; a mismatched level in the generated response is rejected. Changing level
+does not reset learned words, reviews, or streaks. Update the backend together with
+the app to enable B2, C1, and C2 on older installations.
 
 Set these server variables in `.env` in addition to `VIDEO_API_TOKEN`:
 

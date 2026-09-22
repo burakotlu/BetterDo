@@ -27,7 +27,9 @@ fun LessonDiscovery(language: String, settings: VideoSettings, configure: () -> 
     var categories by remember(api) { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var enabled by remember(api) { mutableStateOf(false) }
     var category by rememberSaveable { mutableStateOf("") }
-    var level by rememberSaveable { mutableStateOf("A1") }
+    var level by rememberSaveable(language) { mutableStateOf(preferences.getString("level:$language", "A1").orEmpty()) }
+    var levels by remember(api) { mutableStateOf<List<String>>(emptyList()) }
+    var levelMenu by remember { mutableStateOf(false) }
     var request by remember(api, language) { mutableStateOf(preferences.getString(requestKey, null)) }
     var retry by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
@@ -38,6 +40,9 @@ fun LessonDiscovery(language: String, settings: VideoSettings, configure: () -> 
         if (api != null) try {
             val data = withContext(Dispatchers.IO) { api.lessonsRequest("/api/categories") }
             enabled = data.getBoolean("generationEnabled")
+            val supported = data.optJSONArray("levels") ?: JSONArray(listOf("A1", "A2", "B1"))
+            levels = LanguageLevels.labels.keys.filter { code -> (0 until supported.length()).any { supported.optString(it) == code } }
+            if (level !in levels) level = levels.firstOrNull().orEmpty()
             val items = data.getJSONArray("categories")
             categories = (0 until items.length().coerceAtMost(20)).map {
                 items.getJSONObject(it).let { item -> item.getString("id") to item.getString("title") }
@@ -65,6 +70,7 @@ fun LessonDiscovery(language: String, settings: VideoSettings, configure: () -> 
                         val body = JSONObject().put("version", 1).put("lessons", JSONArray().put(job.getJSONObject("lesson"))).toString()
                         val parsed = JsonCodec.lessons(body).single()
                         require(parsed.language == language)
+                        require(parsed.level == payload.getString("level"))
                         lesson = body
                     }
                     "failed" -> { failed = true; error = job.optString("error", "Lesson generation failed.") }
@@ -84,12 +90,25 @@ fun LessonDiscovery(language: String, settings: VideoSettings, configure: () -> 
             } else {
                 if (!enabled && categories.isNotEmpty()) Text("The server needs an installed Ollama model before it can generate lessons.")
                 if (request == null) {
+                    Text("Language level", style = MaterialTheme.typography.titleMedium)
+                    Box {
+                        OutlinedButton(onClick = { levelMenu = true }, enabled = levels.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                            Text(if (level.isBlank()) "No supported levels" else "$level - ${LanguageLevels.labels[level]}")
+                        }
+                        DropdownMenu(expanded = levelMenu, onDismissRequest = { levelMenu = false }) {
+                            levels.forEach { code ->
+                                DropdownMenuItem(text = { Text("$code - ${LanguageLevels.labels[code]}") }, onClick = {
+                                    level = code
+                                    preferences.edit().putString("level:$language", code).apply()
+                                    levelMenu = false
+                                })
+                            }
+                        }
+                    }
+                    Text("Your choice is remembered separately for English and German. You can change it for each new lesson.")
                     Text("Suggested topics", style = MaterialTheme.typography.titleMedium)
                     categories.forEach { (id, title) ->
                         FilterChip(selected = category == id, onClick = { category = id }, label = { Text(title) }, modifier = Modifier.fillMaxWidth())
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("A1", "A2", "B1").forEach { item -> FilterChip(selected = level == item, onClick = { level = item }, label = { Text(item) }) }
                     }
                 }
                 if (busy) { CircularProgressIndicator(Modifier.size(28.dp)); Text("Creating your lesson... You can close this screen and return later.") }
@@ -108,7 +127,7 @@ fun LessonDiscovery(language: String, settings: VideoSettings, configure: () -> 
                     .put("language", language).put("category", category).put("level", level).toString()
                 preferences.edit().putString(requestKey, body).commit()
                 request = body
-            }, enabled = api != null && enabled && category.isNotBlank()) { Text("Create lesson") }
+            }, enabled = api != null && enabled && category.isNotBlank() && level in levels) { Text("Create lesson") }
         }
     }, dismissButton = { TextButton(onClick = dismiss) { Text("Close") } })
 }
