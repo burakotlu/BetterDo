@@ -26,10 +26,10 @@ fun VideoSettingsDialog(settings: VideoSettings, dismiss: () -> Unit) {
     var url by remember { mutableStateOf(settings.serverUrl) }
     var token by remember { mutableStateOf(settings.accessToken) }
     var error by remember { mutableStateOf<String?>(null) }
-    AlertDialog(onDismissRequest = dismiss, title = { Text("Video settings") }, text = {
+    AlertDialog(onDismissRequest = dismiss, title = { Text("Service settings") }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Connect to your video service. Use its access token, not an AI provider API key. The token stays in memory until the app closes.")
-            OutlinedTextField(url, { url = it }, label = { Text("Video server URL") }, singleLine = true)
+            Text("Connect to your learning service. Use its access token, not an AI provider API key. The token stays in memory until the app closes.")
+            OutlinedTextField(url, { url = it }, label = { Text("Service URL") }, singleLine = true)
             OutlinedTextField(token, { token = it }, label = { Text("Service access token") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
@@ -66,7 +66,7 @@ fun AiVideoSection(lesson: Lesson, settings: VideoSettings, configure: () -> Uni
                         checked = true
                         error = null
                     } catch (exception: CancellationException) { throw exception }
-                    catch (exception: Exception) { error = "Could not check your video. Check your connection and Video settings."; break }
+                    catch (exception: Exception) { error = "Could not check your video. Check your connection and Service settings."; break }
                     if (video?.status !in listOf(VideoStatus.PENDING, VideoStatus.PROCESSING) && !busy) break
                     delay(4_000)
                 } while (true)
@@ -78,7 +78,7 @@ fun AiVideoSection(lesson: Lesson, settings: VideoSettings, configure: () -> Uni
                 Text("Watch an AI teacher explain this word in a short video.")
                 if (api == null) {
                     Text("Connect a video service to watch or generate lesson videos.")
-                    OutlinedButton(onClick = configure) { Text("Video settings") }
+                    OutlinedButton(onClick = configure) { Text("Service settings") }
                 } else {
                     if (video?.mock == true) Text("Mock preview: sample video only. No AI generation or charges.")
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -113,7 +113,7 @@ fun AiVideoSection(lesson: Lesson, settings: VideoSettings, configure: () -> Uni
                         }
                         error == null -> { CircularProgressIndicator(Modifier.size(28.dp)); Text("Checking for an existing video...") }
                     }
-                    TextButton(onClick = configure) { Text("Video settings") }
+                    TextButton(onClick = configure) { Text("Service settings") }
                 }
             }
         }

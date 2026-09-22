@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from .service import public_job
 
 
-def create_server(address, service, token):
+def create_server(address, service, token, lessons=None):
     class Handler(BaseHTTPRequestHandler):
         def setup(self):
             super().setup()
@@ -35,6 +35,16 @@ def create_server(address, service, token):
             if not self.authorized():
                 return
             path = urlparse(self.path).path
+            if lessons and path == "/api/categories":
+                self.respond(200, lessons.categories())
+                return
+            if lessons and path == "/api/catalog":
+                self.respond(200, lessons.catalog())
+                return
+            job = re.fullmatch(r"/api/lesson-jobs/([a-f0-9]{32})", path)
+            if lessons and job:
+                self.respond(200, {"job": lessons.get(job[1])})
+                return
             match = re.fullmatch(r"/api/lessons/((?:en|de)-[a-z0-9-]+)/video", path)
             if match:
                 self.respond(200, {"video": public_job(service.database.get(match[1]))})
@@ -48,8 +58,9 @@ def create_server(address, service, token):
         def do_POST(self):
             if not self.authorized():
                 return
-            match = re.fullmatch(r"/api/lessons/((?:en|de)-[a-z0-9-]+)/video", urlparse(self.path).path)
-            if not match:
+            path = urlparse(self.path).path
+            match = re.fullmatch(r"/api/lessons/((?:en|de)-[a-z0-9-]+)/video", path)
+            if not match and not (lessons and path == "/api/lesson-jobs"):
                 self.respond(404, {"error": "Not found"})
                 return
             try:
@@ -59,6 +70,12 @@ def create_server(address, service, token):
                 if not 0 < size <= 1024:
                     raise ValueError("Expected a JSON body of at most 1024 bytes")
                 body = json.loads(self.rfile.read(size))
+                if lessons and path == "/api/lesson-jobs":
+                    if not isinstance(body, dict) or set(body) != {"id", "language", "category", "level"} or not all(isinstance(value, str) for value in body.values()):
+                        raise ValueError("Expected id, language, category, and level")
+                    job = lessons.create(body["id"], body["language"], body["category"], body["level"])
+                    self.respond(202 if job["status"] in ("pending", "processing") else 200, {"job": job})
+                    return
                 if not isinstance(body, dict) or set(body) - {"retry"} or type(body.get("retry", False)) is not bool:
                     raise ValueError("Expected {\"retry\": true} or {}")
                 row = service.generate(match[1], retry=body.get("retry", False))

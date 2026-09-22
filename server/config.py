@@ -24,6 +24,9 @@ class Config:
     data_dir: Path = ROOT / "server-data"
     catalog: Path = ROOT / "content/lessons.json"
     daily_limit: int = 10
+    lesson_model: str = ""
+    ollama_url: str = "http://127.0.0.1:11434"
+    lesson_limit: int = 30
 
     @classmethod
     def from_env(cls):
@@ -34,7 +37,12 @@ class Config:
                      token=os.getenv("VIDEO_API_TOKEN", ""),
                      data_dir=Path(os.getenv("VIDEO_DATA_DIR", str(ROOT / "server-data"))).resolve(),
                      catalog=Path(os.getenv("VIDEO_CATALOG_PATH", str(ROOT / "content/lessons.json"))),
-                     daily_limit=int(os.getenv("VIDEO_DAILY_LIMIT", "10")))
+                     daily_limit=int(os.getenv("VIDEO_DAILY_LIMIT", "10")),
+                     lesson_model=os.getenv("AI_LESSON_MODEL", ""),
+                     ollama_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
+                     lesson_limit=int(os.getenv("LESSON_DAILY_LIMIT", "30")))
+        if not 1 <= config.lesson_limit <= 1000:
+            raise ValueError("LESSON_DAILY_LIMIT must be between 1 and 1000")
         if len(config.token) < 32 or not config.token.isascii() or any(c.isspace() for c in config.token):
             raise ValueError("VIDEO_API_TOKEN must be at least 32 ASCII characters without whitespace")
         if not 1 <= config.daily_limit <= 1000:

@@ -8,6 +8,7 @@ from .http_api import create_server
 from .media import VideoMedia
 from .providers import create_provider
 from .service import VideoService
+from .lessons import LessonService
 
 
 def main():
@@ -34,7 +35,9 @@ def main():
     database = VideoDatabase(config.data_dir / "videos.db")
     media = VideoMedia(config.data_dir, config.provider)
     service = VideoService(config, database, create_provider(config.provider, config.api_key), media)
-    http = create_server((args.host, args.port), service, config.token)
+    lessons = LessonService(database, config.lesson_model, config.ollama_url, config.lesson_limit)
+    lessons.recover()
+    http = create_server((args.host, args.port), service, config.token, lessons)
     stop = threading.Event()
 
     def work():
@@ -46,6 +49,14 @@ def main():
 
     worker = threading.Thread(target=work, daemon=True)
     worker.start()
+    def lesson_work():
+        while not stop.wait(1):
+            try:
+                lessons.tick()
+            except Exception as error:
+                logging.error("Lesson worker error (%s)", type(error).__name__)
+    lesson_worker = threading.Thread(target=lesson_work, daemon=True)
+    lesson_worker.start()
     logging.warning("Video service listening on %s:%s; provider=%s", args.host, args.port, config.provider)
     try:
         http.serve_forever()
@@ -55,6 +66,7 @@ def main():
         stop.set()
         http.server_close()
         worker.join(timeout=240)
+        lesson_worker.join(timeout=200)
         lock.close()
 
 

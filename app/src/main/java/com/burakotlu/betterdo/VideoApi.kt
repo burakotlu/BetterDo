@@ -32,6 +32,39 @@ class VideoApi(val baseUrl: String, private val token: String, allowLocalHttp: B
     }
     fun mediaHeaders(): Map<String, String> = mapOf("Authorization" to "Bearer $token")
 
+    fun lessonsRequest(path: String, body: JSONObject? = null): JSONObject {
+        require(path == "/api/categories" || path == "/api/catalog" || path == "/api/lesson-jobs" || path.matches(Regex("/api/lesson-jobs/[a-f0-9]{32}")))
+        val connection = URL(baseUrl.trimEnd('/') + path).openConnection() as HttpURLConnection
+        try {
+            connection.connectTimeout = 8_000
+            connection.readTimeout = 10_000
+            connection.instanceFollowRedirects = false
+            connection.setRequestProperty("Authorization", "Bearer $token")
+            if (body != null) {
+                connection.requestMethod = "POST"
+                connection.doOutput = true
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            }
+            val code = connection.responseCode
+            if (code !in listOf(200, 202, 400)) throw IOException("Could not reach the lesson service (HTTP $code). Check Service settings.")
+            val stream = if (code == 400) connection.errorStream else connection.inputStream
+            val output = java.io.ByteArrayOutputStream()
+            stream.use {
+                val bytes = ByteArray(8192)
+                while (true) {
+                    val count = it.read(bytes)
+                    if (count < 0) break
+                    if (output.size() + count > 2_000_000) throw IOException("Lesson response is too large.")
+                    output.write(bytes, 0, count)
+                }
+            }
+            val result = JSONObject(output.toString("UTF-8"))
+            if (code == 400) throw IOException(result.optString("error", "Lesson request failed.").take(300))
+            return result
+        } finally { connection.disconnect() }
+    }
+
     private fun request(lessonId: String, create: Boolean, retry: Boolean): LessonVideo? {
         require(lessonId.matches(Regex("(en|de)-[a-z0-9]+(?:-[a-z0-9]+)*")))
         val connection = URL(baseUrl.trimEnd('/') + "/api/lessons/$lessonId/video").openConnection() as HttpURLConnection
@@ -49,7 +82,7 @@ class VideoApi(val baseUrl: String, private val token: String, allowLocalHttp: B
                 connection.outputStream.use { it.write(JSONObject().put("retry", retry).toString().toByteArray(Charsets.UTF_8)) }
             }
             val code = connection.responseCode
-            if (code == 401) throw IOException("Check your video service access token in Video settings.")
+            if (code == 401) throw IOException("Check your video service access token in Service settings.")
             if (code !in listOf(200, 202, 400)) throw IOException("Video service unavailable (HTTP $code). Try checking again.")
             val input = if (code == 400) connection.errorStream else connection.inputStream
             val raw = input.use { stream ->

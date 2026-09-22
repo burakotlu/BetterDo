@@ -22,6 +22,9 @@ Do not add a web frontend or WebView shell. Use Kotlin and Jetpack Compose.
 ## Architecture
 - `app/`: native Android application; Kotlin, Jetpack Compose, Android TextToSpeech.
 - `content/lessons.json`: independently published HTTPS catalog; never bundle it in the app APK.
+- Live lessons now come from the authenticated service: category/level selection,
+  asynchronous Ollama jobs, and `GET /api/catalog`. The static JSON is legacy reviewed
+  content, not the normal source for new app lessons. Preserve existing cached lessons.
 - `CatalogRepository` + `CatalogDatabase`: validate downloads and cache snapshots in SQLite.
   Keep retired lessons for progress/review and exclude them from new lesson selection.
   Failed downloads must preserve the last valid cache and all user progress.
@@ -32,6 +35,8 @@ Do not add a web frontend or WebView shell. Use Kotlin and Jetpack Compose.
 - `tests/`: Python standard-library tests for content and agent validation.
 - `server/`: optional private video API, SQLite job queue, and worker. Provider keys
   stay here. Mock mode must work without paid services. See `server/README.md`.
+- `server/lessons.py`: on-demand lesson generation and dynamic catalog; validate
+  model output before storage and label it as AI-generated, not human-reviewed.
 - Video generation is explicit, deduplicated, and budgeted. Completed videos are
   reused; opening a lesson only reads status. Never reset video jobs to retry an
   ambiguous paid submission without reconciling its provider ID/idempotency key.

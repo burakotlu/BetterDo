@@ -12,7 +12,10 @@ class VideoDatabase:
             version = db.execute("PRAGMA user_version").fetchone()[0]
             if version == 0:
                 db.executescript(Path(__file__).with_name("migrations").joinpath("001_videos.sql").read_text())
-            elif version != 1:
+                version = 1
+            if version == 1:
+                db.executescript("BEGIN IMMEDIATE;\n" + Path(__file__).with_name("migrations").joinpath("002_lessons.sql").read_text() + "\nCOMMIT;")
+            elif version != 2:
                 raise ValueError("Unsupported video database version")
 
     @contextmanager

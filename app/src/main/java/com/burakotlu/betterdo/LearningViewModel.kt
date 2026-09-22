@@ -46,19 +46,22 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
     private val database = CatalogDatabase(application)
     private val source = if (BuildConfig.DEBUG) application.getSharedPreferences("catalog", 0).getString("test_url", null) ?: BuildConfig.CATALOG_URL else BuildConfig.CATALOG_URL
     private val repository = CatalogRepository(source, database, HttpCatalogClient(BuildConfig.DEBUG))
+    private val generatedRepository = CatalogRepository("generated-lessons", database, CatalogClient { error("Use the lesson service") })
     private var syncJob: Job? = null
+    private var lessonService: VideoApi? = null
     private val mutable = MutableStateFlow(LearningState())
     val state = mutable.asStateFlow()
 
     init {
         viewModelScope.launch {
             val cached = withContext(Dispatchers.IO) { runCatching { repository.cached() }.getOrNull() }
+            val generated = withContext(Dispatchers.IO) { runCatching { generatedRepository.cached() }.getOrNull() }
             val progressResult = withContext(Dispatchers.IO) { runCatching {
                 if (file.baseFile.exists() || File(file.baseFile.path + ".bak").exists()) JsonCodec.decodeProgress(file.openRead().bufferedReader(Charsets.UTF_8).use { it.readText() })
                 else LearningProgress()
             } }
-            mutable.value = LearningState(loading = cached == null, lessons = cached?.lessons.orEmpty(), activeIds = cached?.activeIds.orEmpty(),
-                catalogReady = cached != null, lastSynced = cached?.checkedAt ?: 0, progress = progressResult.getOrDefault(LearningProgress()),
+            mutable.value = LearningState(loading = cached == null && generated == null, lessons = (cached?.lessons.orEmpty() + generated?.lessons.orEmpty()).distinctBy { it.id }, activeIds = cached?.activeIds.orEmpty() + generated?.activeIds.orEmpty(),
+                catalogReady = cached != null || generated != null, lastSynced = cached?.checkedAt ?: 0, progress = progressResult.getOrDefault(LearningProgress()),
                 writable = progressResult.isSuccess, message = if (progressResult.isFailure) "Saved progress could not be read and has not been overwritten. Progress in this session will not be saved." else null)
             if (cached != null) updateProgress { it }
             refreshCatalog()
@@ -108,20 +111,52 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
 
     fun refreshCatalog() {
         if (syncJob?.isActive == true) return
+        val api = lessonService
+        val legacyTest = BuildConfig.DEBUG && getApplication<Application>().getSharedPreferences("catalog", 0).contains("test_url")
+        if (api == null && !legacyTest) {
+            mutable.value = mutable.value.copy(loading = false, catalogReady = true)
+            return
+        }
         syncJob = viewModelScope.launch {
             mutable.value = mutable.value.copy(syncing = true, syncError = null)
-            val result = withContext(Dispatchers.IO) { runCatching { repository.refresh() } }
+            val result = withContext(Dispatchers.IO) { runCatching {
+                if (api != null) api.lessonsRequest("/api/catalog").toString() else HttpCatalogClient(BuildConfig.DEBUG).fetch(source)
+            } }
             mutex.withLock {
                 val current = mutable.value
-                val fresh = result.getOrNull()
+                val fresh = withContext(Dispatchers.IO) { runCatching {
+                    (if (api != null) generatedRepository else repository).merge(result.getOrThrow())
+                }.getOrNull() }
+                val generated = withContext(Dispatchers.IO) { runCatching { generatedRepository.cached() }.getOrNull() }
                 mutable.value = if (fresh != null) current.copy(
-                    loading = false, syncing = false, catalogReady = true, lessons = fresh.lessons, activeIds = fresh.activeIds,
+                    loading = false, syncing = false, catalogReady = true, lessons = (fresh.lessons + generated?.lessons.orEmpty() + current.lessons).distinctBy { it.id }, activeIds = fresh.activeIds + generated?.activeIds.orEmpty(),
                     lastSynced = fresh.checkedAt, syncError = null,
                     answers = current.answers.filterKeys { id -> current.lessons.find { it.id == id } == fresh.lessons.find { it.id == id } }
                 ) else current.copy(loading = false, syncing = false,
                     syncError = if (current.catalogReady) "Lessons could not be updated. You can continue with downloaded lessons." else "An internet connection is needed to download your first lessons. Check your connection and try again.")
             }
             if (result.isSuccess) updateProgress { it }
+        }
+    }
+
+    fun connectLessonService(api: VideoApi) {
+        lessonService = api
+        refreshCatalog()
+    }
+
+    fun saveGeneratedLesson(raw: String, onSaved: (String) -> Unit) {
+        viewModelScope.launch {
+            val result = runCatching {
+                mutex.withLock {
+                    val snapshot = withContext(Dispatchers.IO) { generatedRepository.merge(raw) }
+                    val ids = snapshot.lessons.map { it.id }.toSet()
+                    mutable.value = mutable.value.copy(loading = false, catalogReady = true,
+                        lessons = mutable.value.lessons.filter { it.id !in ids } + snapshot.lessons,
+                        activeIds = mutable.value.activeIds + snapshot.activeIds)
+                    JsonCodec.lessons(raw).single().id
+                }
+            }
+            result.onSuccess { onSaved(it) }.onFailure { mutable.value = mutable.value.copy(message = "The generated lesson could not be saved. Please try opening it again.") }
         }
     }
 

@@ -43,8 +43,8 @@ class VideoService:
                 db.execute("UPDATE lesson_videos SET status='pending', attempts=0, polls=0, next_check=?, updated_at=?, error_message=NULL, failure_kind=NULL WHERE lesson_id=?",
                            (now, now, lesson_id))
             else:
-                lessons = load_catalog(self.config.catalog)["lessons"]
-                lesson = next((item for item in lessons if item["id"] == lesson_id), None)
+                generated = db.execute("SELECT body FROM generated_lessons WHERE id=?", (lesson_id,)).fetchone()
+                lesson = json.loads(generated[0]) if generated else next((item for item in load_catalog(self.config.catalog)["lessons"] if item["id"] == lesson_id), None)
                 if lesson is None:
                     raise ValueError("This lesson is not in the server's published catalog")
                 if len(lesson["word"]) > 48 or len(lesson["pronunciation"]) > 70:

@@ -67,9 +67,20 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
     val videoSettings: VideoSettings = viewModel()
     var showVideoSettings by remember { mutableStateOf(false) }
     if (showVideoSettings) VideoSettingsDialog(videoSettings) { showVideoSettings = false }
+    LaunchedEffect(videoSettings.serverUrl, videoSettings.accessToken) {
+        if (videoSettings.serverUrl.isNotBlank() && videoSettings.accessToken.isNotBlank()) {
+            model.connectLessonService(VideoApi(videoSettings.serverUrl, videoSettings.accessToken))
+        }
+    }
     val state by model.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var exploreTopics by rememberSaveable { mutableStateOf(false) }
+    if (exploreTopics) key(state.language) {
+        LessonDiscovery(state.language, videoSettings, { showVideoSettings = true }, { exploreTopics = false }) { raw ->
+            model.saveGeneratedLesson(raw) { id -> selectedId = id; tab = 0; exploreTopics = false }
+        }
+    }
     var languageMenu by remember { mutableStateOf(false) }
     var speechMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
@@ -94,6 +105,9 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.app_name) + ".", fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp) },
                 actions = {
+                    IconButton(onClick = { exploreTopics = true }, enabled = !state.loading) {
+                        Icon(Icons.Outlined.AutoAwesome, contentDescription = "Explore topics")
+                    }
                     IconButton(onClick = { model.refreshCatalog() }, enabled = !state.syncing && !state.loading) {
                         if (state.syncing) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                         else Icon(Icons.Outlined.Sync, contentDescription = "Refresh lessons")
@@ -140,6 +154,7 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
                             Column(Modifier.widthIn(max = 640.dp).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                                 if (selected != null) TextButton(onClick = { selectedId = null; speech.stop() }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null); Text(if (tab == 0) " Back to today's word" else " Back to the list") }
                                 if (tab == 0) Intro(state)
+                                if (tab == 0) OutlinedButton(onClick = { exploreTopics = true }, modifier = Modifier.fillMaxWidth()) { Text("Create a lesson by topic") }
                                 if (state.syncError != null) Text(state.syncError.orEmpty(), color = Muted, fontSize = 12.sp)
                                 if (!state.writable) Text("Saved progress could not be read. Changes in this session are not being saved.", color = MaterialTheme.colorScheme.error)
                                 LessonContent(lesson, state, model, speech) { if (tab == 1) selectedId = null }
@@ -160,9 +175,9 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
                         }
                     } else if (tab == 0) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            EmptyCard("New lessons are on the way", "No lessons have been published in this language yet. Choose another language or refresh the lessons.")
+                            EmptyCard("Choose what you want to learn", "Explore topics and create an AI lesson for your interests and level.")
                             state.syncError?.let { Text(it, color = Muted) }
-                            Button(onClick = { model.refreshCatalog() }, enabled = !state.syncing) { Text("Refresh lessons") }
+                            Button(onClick = { exploreTopics = true }) { Text("Explore topics") }
                         }
                     } else {
                         val list = if (tab == 1) state.due else state.catalog.filter { it.id in state.course.cards }

@@ -25,7 +25,10 @@ class CatalogRepository(private val source: String, private val cache: CatalogCa
     fun cached(): CatalogSnapshot? = cache.read(source)?.let(::snapshot)
 
     fun refresh(now: Long = System.currentTimeMillis()): CatalogSnapshot {
-        val incoming = client.fetch(source)
+        return merge(client.fetch(source), now)
+    }
+
+    fun merge(incoming: String, now: Long = System.currentTimeMillis()): CatalogSnapshot {
         val lessons = JsonCodec.lessons(incoming) // Validate the entire response before replacing anything.
         require(lessons.map { it.language to it.word.trim().lowercase() }.distinct().size == lessons.size)
         val previous = cache.read(source)?.let { stored -> runCatching { snapshot(stored); stored }.getOrNull() }

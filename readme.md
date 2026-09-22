@@ -75,6 +75,11 @@ installation from the app you use to open the APK.
 
 ## Publish lessons without rebuilding the app
 
+The primary learning flow now uses **Explore topics** and a live AI lesson API.
+The app no longer fetches this static file for new lessons in normal use. Existing
+downloaded lessons and progress stay available. The file and publishing tools below
+remain for manually reviewed legacy content and test compatibility.
+
 The current source is `content/lessons.json`, served over HTTPS by GitHub.
 This is a separately published catalog, not a hosted PostgreSQL/API service.
 The phone's SQLite database stores validated catalog snapshots and retired lessons
@@ -164,7 +169,7 @@ teaching script without another language-model dependency.
 
 For free local development, copy `.env.example` to `.env`, set a random
 `VIDEO_API_TOKEN`, leave `AI_VIDEO_PROVIDER=mock`, and run
-`py -3 -m server --env-file .env`. In the Android debug app's **Video settings**,
+`py -3 -m server --env-file .env`. In the Android debug app's **Service settings**,
 enter `http://10.0.2.2:8080` for the emulator and that service token. Mock mode
 simulates the job lifecycle and plays a local sample, without AI charges.
 
@@ -175,6 +180,37 @@ caps new submissions. No public backend is deployed automatically.
 
 See [video service setup](server/README.md) for configuration, Docker deployment,
 API/database details, tests, and how to add a provider in `server/providers/`.
+
+## Generate lessons by topic
+
+Open **Explore topics** (the sparkle button), choose a suggested category and
+**A1 / A2 / B1**, then tap **Create lesson**. English and German share the same
+workflow. The backend creates the lesson asynchronously with Ollama, validates its
+structure/language/level, rejects duplicate words, and saves it in SQLite. Open the
+finished lesson to cache it on the phone, practice, listen, take the quiz, or request
+an AI video. **Refresh lessons** retrieves the live generated catalog after connecting.
+
+Set these server variables in `.env` in addition to `VIDEO_API_TOKEN`:
+
+```dotenv
+AI_LESSON_MODEL=YOUR_INSTALLED_OLLAMA_MODEL
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+LESSON_DAILY_LIMIT=30
+```
+
+Run Ollama on the server and install the model you selected. Start the backend with
+`py -3 -m server --env-file .env`, then enter its URL and service token in the app's
+**Service settings**. For Android emulator development use `http://10.0.2.2:8080`.
+Remote devices need a hosted HTTPS backend; GitHub Actions/raw files do not run it.
+The model is not bundled in the APK and lesson creation requires internet access.
+Downloaded lessons work offline. There is no requirement to edit `lessons.json`.
+
+Categories are suggested topics, not personalized AI recommendations yet. Generated
+content is labeled as AI-generated: structural checks cannot guarantee linguistic
+accuracy. Generation may take seconds or minutes depending on the model/hardware.
+Closing and reopening the topic dialog resumes the saved request without submitting
+another job. The global server generation allowance protects capacity; it does not
+limit how many existing words a learner can study.
 
 ## Tests and project layout
 

@@ -1,5 +1,38 @@
 # Lesson video service
 
+## Live AI lesson catalog
+
+The service also supports category-based lesson creation, independent of the video
+provider. Set `AI_LESSON_MODEL` to an installed Ollama model, `OLLAMA_BASE_URL` to
+its trusted server URL (default `http://127.0.0.1:11434`), and optionally
+`LESSON_DAILY_LIMIT` (default 30 new lesson requests per rolling 24 hours).
+In Docker, localhost is the container: use your Ollama service name or
+`http://host.docker.internal:11434` on Docker Desktop. Keep Ollama private; only the
+authenticated BetterDo backend should expose generation to clients.
+
+- `GET /api/categories`: supported topics, levels, and generation availability.
+- `POST /api/lesson-jobs`: `{ "id": "<32 lowercase hex characters>", "language":
+  "en", "category": "travel", "level": "A1" }`; returns immediately with a job.
+- `GET /api/lesson-jobs/{id}`: pending/processing/completed/failed and the final lesson.
+- `GET /api/catalog`: up to 500 newest generated lessons, in the existing catalog format.
+
+All endpoints use the same service token. The worker reuses the existing Ollama
+generator and its bounded repair loop. Jobs are idempotent by request ID; five jobs
+may be active at once. A separate worker keeps slow model generation from blocking
+video polling. Interrupted model calls become explicitly failed on restart; queued
+jobs resume. Model errors never overwrite existing lessons or video jobs.
+
+Migration `002_lessons.sql` adds `generated_lessons` and `lesson_jobs`, preserving
+the version-1 video tables. Generated lessons have server-assigned IDs and a unique
+language/word key. Video generation resolves these stored lessons directly. The
+manually reviewed JSON catalog remains only a legacy video lookup source; it is not
+needed to generate or serve new lessons. Shared private-service users see the same
+generated catalog. Add account-specific access rules before a public multi-user launch.
+
+AI lessons are marked as generated and validated for schema, language, level, and
+duplicate words. They are not human-reviewed and can contain linguistic mistakes.
+No model is installed automatically, and tests use controlled model responses.
+
 This optional Python standard-library service complements the native Android app.
 There was no existing hosted API, authentication system, or server database to
 extend. The catalog and progress architecture remain unchanged. No OpenAI
@@ -21,7 +54,7 @@ DLL, activate its environment first. Do not install a third-party sqlite package
 On Linux/macOS use `python3` instead of `py -3`.
 
 Run the Android debug app, open a lesson, scroll to **AI Video**, and open
-**Video settings**. Use `http://10.0.2.2:8080` on the Android emulator, or
+**Service settings**. Use `http://10.0.2.2:8080` on the Android emulator, or
 `http://127.0.0.1:8080` with `adb reverse tcp:8080 tcp:8080` on a USB device.
 Enter your `VIDEO_API_TOKEN` as the service access token. The app remembers the
 server URL, but holds the token only in memory; enter it again after process death.
