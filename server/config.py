@@ -27,6 +27,12 @@ class Config:
     lesson_model: str = ""
     ollama_url: str = "http://127.0.0.1:11434"
     lesson_limit: int = 30
+    public_video_playback: bool = False
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    email_from: str = ""
 
     @classmethod
     def from_env(cls):
@@ -40,7 +46,13 @@ class Config:
                      daily_limit=int(os.getenv("VIDEO_DAILY_LIMIT", "10")),
                      lesson_model=os.getenv("AI_LESSON_MODEL", ""),
                      ollama_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
-                     lesson_limit=int(os.getenv("LESSON_DAILY_LIMIT", "30")))
+                     lesson_limit=int(os.getenv("LESSON_DAILY_LIMIT", "30")),
+                     public_video_playback=os.getenv("PUBLIC_VIDEO_PLAYBACK", "false").lower() == "true",
+                     smtp_host=os.getenv("ACCOUNT_SMTP_HOST", ""),
+                     smtp_port=int(os.getenv("ACCOUNT_SMTP_PORT", "587")),
+                     smtp_username=os.getenv("ACCOUNT_SMTP_USERNAME", ""),
+                     smtp_password=os.getenv("ACCOUNT_SMTP_PASSWORD", ""),
+                     email_from=os.getenv("ACCOUNT_EMAIL_FROM", ""))
         if not 1 <= config.lesson_limit <= 1000:
             raise ValueError("LESSON_DAILY_LIMIT must be between 1 and 1000")
         if len(config.token) < 32 or not config.token.isascii() or any(c.isspace() for c in config.token):

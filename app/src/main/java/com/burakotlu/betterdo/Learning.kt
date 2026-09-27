@@ -26,7 +26,8 @@ data class CourseProgress(
 )
 data class LearningProgress(
     val language: String = "en",
-    val courses: Map<String, CourseProgress> = mapOf("en" to CourseProgress(), "de" to CourseProgress())
+    val courses: Map<String, CourseProgress> = mapOf("en" to CourseProgress(), "de" to CourseProgress()),
+    val levels: Map<String, String> = emptyMap()
 )
 
 object Scheduler {

@@ -49,6 +49,12 @@ class LearningFlowTest {
         }
     }
 
+    private fun startEnglishA2() {
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("Choose your course level").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("A2 · Elementary").performClick()
+        rule.onNodeWithText("Start learning").performClick()
+    }
+
     @After fun diagnostics() {
         screenshot("final-state")
         println(rule.onRoot().printToString())
@@ -57,10 +63,14 @@ class LearningFlowTest {
     }
 
     @Test fun languageQuizReviewAndSavedProgress() {
+        startEnglishA2()
         rule.waitUntil(10_000) { rule.onAllNodesWithText("sneeze").fetchSemanticsNodes().isNotEmpty() }
         screenshot("english-daily")
         rule.onNodeWithText("EN · English").performClick()
         rule.onNodeWithText("German").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Choose your course level").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("A2 · Elementary").performClick()
+        rule.onNodeWithText("Start learning").performClick()
         rule.waitUntil(5_000) { rule.onAllNodesWithText("niesen").fetchSemanticsNodes().isNotEmpty() }
         screenshot("german-daily")
         rule.onNodeWithText("DE · German").performClick()
@@ -84,6 +94,7 @@ class LearningFlowTest {
     }
 
     @Test fun extraWordsAreAvailableTheSameDayAndPersist() {
+        startEnglishA2()
         rule.waitUntil(10_000) { rule.onAllNodesWithText("sneeze").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("Review tomorrow").performScrollTo().performClick()
         rule.waitUntil(5_000) { rule.onAllNodesWithText("Learn another word").fetchSemanticsNodes().isNotEmpty() }
@@ -91,17 +102,18 @@ class LearningFlowTest {
         rule.waitUntil(5_000) { rule.onAllNodesWithContentDescription("Dismiss").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithContentDescription("Dismiss").performClick()
         rule.onNodeWithText("Learn another word").performScrollTo().performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("errand", substring = false).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("receipt", substring = false).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("Review tomorrow").performScrollTo().performClick()
         rule.waitUntil(5_000) { rule.onAllNodesWithText("2 words practiced today", substring = true).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("My words").performClick()
         rule.activityRule.scenario.recreate()
-        rule.waitUntil(10_000) { rule.onAllNodesWithText("errand", substring = false).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("receipt", substring = false).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("sneeze", substring = false).assertExists()
-        rule.onNodeWithText("errand", substring = false).assertExists()
+        rule.onNodeWithText("receipt", substring = false).assertExists()
     }
 
     @Test fun sameApkDownloadsChangedLessonAndKeepsItOnNetworkFailure() {
+        startEnglishA2()
         rule.waitUntil(15_000) { rule.onAllNodesWithText("sneeze").fetchSemanticsNodes().isNotEmpty() }
         val updated = JSONObject(responseBody)
         updated.getJSONArray("lessons").getJSONObject(0).put("context", "An updated usage note from the server.")

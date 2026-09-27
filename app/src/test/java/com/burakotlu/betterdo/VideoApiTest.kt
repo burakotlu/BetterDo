@@ -30,4 +30,13 @@ class VideoApiTest {
         assertThrows(IllegalArgumentException::class.java) { VideoApi.validateBaseUrl("http://example.com", true) }
         assertThrows(IllegalArgumentException::class.java) { VideoApi.validateBaseUrl("https://user:password@example.com", false) }
     }
+
+    @Test fun publishedPlaybackNeedsNoServiceTokenAndKeepsMediaOnConfiguredOrigin() {
+        val video = VideoApi.decode(completed().put("videoUrl", "/api/public/media/${"a".repeat(32)}.mp4"), "en-sneeze")
+        assertEquals("https://videos.example.com/api/public/media/${"a".repeat(32)}.mp4",
+            PublishedVideoApi("https://videos.example.com", false).mediaUrl(video))
+        assertThrows(IllegalArgumentException::class.java) {
+            PublishedVideoApi("https://videos.example.com", false).mediaUrl(video.copy(videoPath = "https://foreign.example/video.mp4"))
+        }
+    }
 }

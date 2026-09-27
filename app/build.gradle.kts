@@ -17,6 +17,24 @@ android {
         val catalogUrl = providers.gradleProperty("catalogUrl").getOrElse("https://raw.githubusercontent.com/burakotlu/BetterDo/main/content/lessons.json")
         require(catalogUrl.startsWith("https://") && !catalogUrl.contains('"') && !catalogUrl.contains('\\') && !catalogUrl.contains('\n'))
         buildConfigField("String", "CATALOG_URL", "\"$catalogUrl\"")
+        val backendUrl = providers.gradleProperty("backendUrl").getOrElse("")
+        require(backendUrl.isEmpty() || Regex("https://[A-Za-z0-9.-]+(?::[0-9]{2,5})?").matches(backendUrl))
+        buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
+        val videoPlaybackUrl = providers.gradleProperty("videoPlaybackUrl").getOrElse("")
+        require(videoPlaybackUrl.isEmpty() || Regex("https://[A-Za-z0-9.-]+(?::[0-9]{2,5})?").matches(videoPlaybackUrl))
+        buildConfigField("String", "VIDEO_PLAYBACK_URL", "\"$videoPlaybackUrl\"")
+    }
+    buildTypes.getByName("debug") {
+        val localBackendUrl = providers.gradleProperty("debugBackendUrl").orNull
+        if (localBackendUrl != null) {
+            require(Regex("http://(?:10\\.0\\.2\\.2|127\\.0\\.0\\.1|localhost):[0-9]{2,5}").matches(localBackendUrl))
+            buildConfigField("String", "BACKEND_URL", "\"$localBackendUrl\"")
+        }
+        val localVideoUrl = providers.gradleProperty("debugVideoPlaybackUrl").orNull
+        if (localVideoUrl != null) {
+            require(Regex("http://(?:10\\.0\\.2\\.2|127\\.0\\.0\\.1|localhost):[0-9]{2,5}").matches(localVideoUrl))
+            buildConfigField("String", "VIDEO_PLAYBACK_URL", "\"$localVideoUrl\"")
+        }
     }
     buildFeatures { compose = true; buildConfig = true }
     sourceSets.getByName("test").resources.srcDir("src/androidTest/assets")

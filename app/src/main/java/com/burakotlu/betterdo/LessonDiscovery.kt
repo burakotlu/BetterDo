@@ -18,16 +18,14 @@ import org.json.JSONObject
 import java.util.UUID
 
 @Composable
-fun LessonDiscovery(language: String, settings: VideoSettings, configure: () -> Unit, dismiss: () -> Unit, open: (String) -> Unit) {
-    val api = remember(settings.serverUrl, settings.accessToken) {
-        runCatching { VideoApi(settings.serverUrl, settings.accessToken) }.getOrNull()
-    }
+fun LessonDiscovery(language: String, api: LessonApi?, accountId: String?, openAccount: () -> Unit, dismiss: () -> Unit,
+                    selectedLevel: String? = null, onLevelSelected: (String) -> Unit = {}, open: (String) -> Unit) {
     val preferences = LocalContext.current.getSharedPreferences("lesson_requests", 0)
-    val requestKey = settings.serverUrl + ":" + language
+    val requestKey = "lesson:" + accountId + ":" + language
     var categories by remember(api) { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var enabled by remember(api) { mutableStateOf(false) }
     var category by rememberSaveable { mutableStateOf("") }
-    var level by rememberSaveable(language) { mutableStateOf(preferences.getString("level:$language", "A1").orEmpty()) }
+    var level by rememberSaveable(language, selectedLevel) { mutableStateOf(selectedLevel ?: preferences.getString("level:$language", "A1").orEmpty()) }
     var levels by remember(api) { mutableStateOf<List<String>>(emptyList()) }
     var levelMenu by remember { mutableStateOf(false) }
     var request by remember(api, language) { mutableStateOf(preferences.getString(requestKey, null)) }
@@ -49,7 +47,7 @@ fun LessonDiscovery(language: String, settings: VideoSettings, configure: () -> 
             }
             if (category.isEmpty()) category = categories.firstOrNull()?.first.orEmpty()
         } catch (exception: CancellationException) { throw exception }
-        catch (exception: Exception) { error = "Could not load topics. Check Service settings and your connection." }
+        catch (exception: Exception) { error = "Could not load topics. Check your connection and account." }
     }
     LaunchedEffect(api, request, retry) {
         val saved = request
@@ -85,8 +83,8 @@ fun LessonDiscovery(language: String, settings: VideoSettings, configure: () -> 
         Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Choose a topic for a new ${if (language == "en") "English" else "German"} lesson. AI creates one word, examples, a dialogue, and a quiz.")
             if (api == null) {
-                Text("Connect a learning service to generate lessons online.")
-                OutlinedButton(onClick = configure) { Text("Service settings") }
+                Text(if (accountId == null) "Sign in to create lessons." else "New lessons are temporarily unavailable.")
+                if (accountId == null) OutlinedButton(onClick = openAccount) { Text("Open account") }
             } else {
                 if (!enabled && categories.isNotEmpty()) Text("The server needs an installed Ollama model before it can generate lessons.")
                 if (request == null) {
@@ -100,6 +98,7 @@ fun LessonDiscovery(language: String, settings: VideoSettings, configure: () -> 
                                 DropdownMenuItem(text = { Text("$code - ${LanguageLevels.labels[code]}") }, onClick = {
                                     level = code
                                     preferences.edit().putString("level:$language", code).apply()
+                                    onLevelSelected(code)
                                     levelMenu = false
                                 })
                             }
@@ -114,7 +113,7 @@ fun LessonDiscovery(language: String, settings: VideoSettings, configure: () -> 
                 if (busy) { CircularProgressIndicator(Modifier.size(28.dp)); Text("Creating your lesson... You can close this screen and return later.") }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 lesson?.let { Text("Your lesson is ready. AI-generated content has been checked for structure, but may contain language mistakes.") }
-                if (error != null) TextButton(onClick = configure) { Text("Service settings") }
+                if (error != null && accountId == null) TextButton(onClick = openAccount) { Text("Open account") }
             }
         }
     }, confirmButton = {

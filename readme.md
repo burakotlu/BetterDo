@@ -12,6 +12,7 @@ defined in `app/src/main/res/values/strings.xml`.
 ## Features
 
 - A daily minimum of one word per language, with optional extra lessons and no daily cap.
+- A first-run English or German course choice with A1 to C2 level selection.
 - IPA pronunciation, an English definition, and usage notes for every word.
 - Three examples, a short conversation, and two quiz questions per lesson.
 - Normal and slow pronunciation using Android TextToSpeech.
@@ -20,11 +21,20 @@ defined in `app/src/main/res/values/strings.xml`.
 - Lessons downloaded over HTTPS and cached locally in SQLite; no bundled lesson catalog.
 - Development instructions in `AGENTS.md` and an optional Python/Ollama content agent.
 
+Choose your language and level before the first lesson. The app remembers a level
+separately for English and German. **Change level** on the Today screen changes
+which new words are offered. Previously learned words and due reviews remain in
+the word library and review queue across level changes. Older progress files ask
+for a level once without resetting saved cards or review dates. If a chosen level
+has no published words, use **Explore topics** to create one or choose another
+level.
+
 The first download requires internet access. Downloaded lessons work offline.
 English example translations that duplicate the original sentence are hidden.
 
-A daily word stays selected for the rest of the day. The next day selects the
-first unseen published word, or the earliest review when all words have been seen.
+A daily word stays selected for the rest of the day unless the course level changes.
+The next day selects the first unseen published word at the chosen level, or the
+earliest review at that level when all its words have been seen.
 After practicing a word, select **Learn another word** to open the next unseen
 published lesson. Extra words have their own saved progress and review dates.
 The daily goal counts distinct words practiced, including reviews and words marked
@@ -157,26 +167,51 @@ The agent produces JSON, validates its structure and duplicate words, and attemp
 repairs up to three times. It writes new files to `drafts/` without overwriting
 existing drafts. Validation does not establish linguistic accuracy: review the
 English definitions, translations, IPA, natural usage, and quiz answers before
-publishing. Automatic daily cloud generation, reminders, and accounts are not included.
+publishing. Automatic daily cloud generation and reminders are not included.
+
+## Accounts and email verification
+
+The **Account** button supports email/password registration, an eight-digit email
+confirmation code, sign-in, a display name, and sign-out. Accounts, salted password
+hashes, and revocable sessions live in the BetterDo server's SQLite database. The
+session token is encrypted with Android Keystore on the device. Lessons and learning
+progress remain local and are available when signed out; progress does not yet
+synchronize between devices.
+
+Set `ACCOUNT_SMTP_HOST`, `ACCOUNT_SMTP_PORT`, `ACCOUNT_SMTP_USERNAME`,
+`ACCOUNT_SMTP_PASSWORD`, and `ACCOUNT_EMAIL_FROM` on the server for real email
+confirmation. An SMTP service you control must be reachable; none is provisioned
+by this repository. The server needs a persistent disk for `VIDEO_DATA_DIR` and
+HTTPS for public clients. Build with `-PbackendUrl=https://YOUR-HOST` or use
+`-PdebugBackendUrl=http://10.0.2.2:8080` for the Android emulator. Learners never
+enter a server URL or service token. `VIDEO_API_TOKEN` remains on the server for
+private video operations and must never be placed in the APK.
 
 ## AI lesson videos
 
-Each lesson now has an **AI Video** section with generation, status, retry,
-transcript, and native 9:16 playback. An optional Python/SQLite server runs the
-durable job queue; provider keys stay on that server. Existing lesson caching and
-learning progress are unchanged. Reviewed definitions/examples produce a short
-teaching script without another language-model dependency.
+The **AI Video** section loads a completed video automatically and starts playback
+without asking learners for a URL or service token. The video and transcript come
+from the configured HTTPS backend. If no video has been published yet, the lesson
+shows that status. Video generation remains an explicit operator action on the
+private server because it can incur provider charges; opening a lesson never
+submits a generation job.
 
 For free local development, copy `.env.example` to `.env`, set a random
-`VIDEO_API_TOKEN`, leave `AI_VIDEO_PROVIDER=mock`, and run
-`py -3 -m server --env-file .env`. In the Android debug app's **Service settings**,
-enter `http://10.0.2.2:8080` for the emulator and that service token. Mock mode
-simulates the job lifecycle and plays a local sample, without AI charges.
+`VIDEO_API_TOKEN`, set `PUBLIC_VIDEO_PLAYBACK=true`, leave `AI_VIDEO_PROVIDER=mock`,
+and run `py -3 -m server --env-file .env`. Create a video once through the private
+server API (see [video service setup](server/README.md)). Build the debug app with
+`-PdebugVideoPlaybackUrl=http://10.0.2.2:8080` for the emulator. Its AI Video
+section then plays the completed mock sample without any in-app setup or token.
 
 Real rendering requires `AI_VIDEO_PROVIDER=heygen`, `AI_VIDEO_API_KEY`,
-`AI_TEACHER_AVATAR_ID`, `AI_TEACHER_VOICE_ID`, and server-side FFmpeg. All routes
-are authenticated; duplicate/completed jobs are reused and `VIDEO_DAILY_LIMIT`
-caps new submissions. No public backend is deployed automatically.
+`AI_TEACHER_AVATAR_ID`, `AI_TEACHER_VOICE_ID`, and server-side FFmpeg. Generation
+routes remain authenticated; duplicate/completed jobs are reused and
+`VIDEO_DAILY_LIMIT` caps new submissions. Public playback exposes only completed
+videos when enabled. No backend is deployed automatically.
+
+For release builds, set `-PvideoPlaybackUrl=https://YOUR-VIDEO-HOST` and deploy
+the backend at that HTTPS origin with `PUBLIC_VIDEO_PLAYBACK=true`. Do not put
+`VIDEO_API_TOKEN` or provider keys in Gradle properties or the APK. The same BetterDo server hosts accounts, lessons, and published videos.
 
 See [video service setup](server/README.md) for configuration, Docker deployment,
 API/database details, tests, and how to add a provider in `server/providers/`.
@@ -184,15 +219,15 @@ API/database details, tests, and how to add a provider in `server/providers/`.
 ## Generate lessons by topic
 
 Open **Explore topics** (the sparkle button), choose a suggested category and
-**A1 / A2 / B1 / B2 / C1 / C2** in **Language level**, then tap **Create lesson**. English and German share the same
+confirm the course level, then tap **Create lesson**. English and German share the same
 workflow. The backend creates the lesson asynchronously with Ollama, validates its
 structure/language/level, rejects duplicate words, and saves it in SQLite. Open the
-finished lesson to cache it on the phone, practice, listen, take the quiz, or request
-an AI video. **Refresh lessons** retrieves the live generated catalog after connecting.
+finished lesson to cache it on the phone, practice, listen, take the quiz, or watch
+its video once published. **Refresh lessons** retrieves the live generated catalog after sign-in.
 
-The level selector shows descriptive labels from Beginner to Proficient and remembers
-the last selection separately for English and German. Only levels supported by the
-connected server are offered. The requested level guides vocabulary and sentence
+The level selector shows descriptive labels from Beginner to Proficient and starts
+with the level chosen for that language. Only levels supported by the BetterDo
+server are offered. The requested level guides vocabulary and sentence
 complexity; a mismatched level in the generated response is rejected. Changing level
 does not reset learned words, reviews, or streaks. Update the backend together with
 the app to enable B2, C1, and C2 on older installations.
@@ -206,8 +241,9 @@ LESSON_DAILY_LIMIT=30
 ```
 
 Run Ollama on the server and install the model you selected. Start the backend with
-`py -3 -m server --env-file .env`, then enter its URL and service token in the app's
-**Service settings**. For Android emulator development use `http://10.0.2.2:8080`.
+`py -3 -m server --env-file .env`. Build the app with the backend URL described above
+and sign in to create lessons. Each account may submit up to five new lesson jobs in
+a rolling 24-hour window.
 Remote devices need a hosted HTTPS backend; GitHub Actions/raw files do not run it.
 The model is not bundled in the APK and lesson creation requires internet access.
 Downloaded lessons work offline. There is no requirement to edit `lessons.json`.

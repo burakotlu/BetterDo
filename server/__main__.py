@@ -9,6 +9,7 @@ from .media import VideoMedia
 from .providers import create_provider
 from .service import VideoService
 from .lessons import LessonService
+from .accounts import AccountService, SmtpMailer
 
 
 def main():
@@ -37,7 +38,9 @@ def main():
     service = VideoService(config, database, create_provider(config.provider, config.api_key), media)
     lessons = LessonService(database, config.lesson_model, config.ollama_url, config.lesson_limit)
     lessons.recover()
-    http = create_server((args.host, args.port), service, config.token, lessons)
+    accounts = AccountService(database, config.token, SmtpMailer(config.smtp_host, config.smtp_port,
+        config.smtp_username, config.smtp_password, config.email_from))
+    http = create_server((args.host, args.port), service, config.token, lessons, config.public_video_playback, accounts)
     stop = threading.Event()
 
     def work():

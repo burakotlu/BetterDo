@@ -1,6 +1,5 @@
 package com.burakotlu.betterdo
 
-import android.app.Application
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -45,10 +44,9 @@ class LessonDiscoveryTest {
             }
         }
         server.start()
-        val settings = VideoSettings(context.applicationContext as Application)
-        settings.configure(server.url("/").toString(), token)
+        val api = LessonApi(server.url("/").toString()) { token }
         var opened: String? = null
-        rule.setContent { MaterialTheme { LessonDiscovery("en", settings, {}, {}, { opened = it }) } }
+        rule.setContent { MaterialTheme { LessonDiscovery("en", api, "a".repeat(32), {}, {}, open = { opened = it }) } }
         rule.waitUntil(10_000) { rule.onAllNodesWithText("Travel").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("A1 - Beginner").performScrollTo().performClick()
         rule.onNodeWithText("C1 - Advanced").performScrollTo().performClick()
@@ -59,6 +57,5 @@ class LessonDiscoveryTest {
         rule.runOnIdle { assertTrue(JsonCodec.lessons(opened!!).single().id.startsWith("en-generated-")); assertEquals(1, posts.get()) }
         assertEquals("C1", context.getSharedPreferences("lesson_requests", 0).getString("level:en", null))
         assertNull(context.getSharedPreferences("lesson_requests", 0).getString("level:de", null))
-        context.getSharedPreferences("video_settings", 0).edit().clear().commit()
     }
 }

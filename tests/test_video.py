@@ -186,6 +186,42 @@ class VideoTests(unittest.TestCase):
             self.assertEqual(206, response.status)
             self.assertEqual(32, len(response.read()))
 
+    def test_public_playback_only_exposes_completed_video(self):
+        http = create_server(("127.0.0.1", 0), self.service, self.config.token, public_video_playback=True)
+        thread = threading.Thread(target=http.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(http.server_close)
+        self.addCleanup(http.shutdown)
+        base = "http://127.0.0.1:{}".format(http.server_port)
+        endpoint = base + "/api/public/lessons/en-sneeze/video"
+        with urlopen(endpoint) as response:
+            self.assertIsNone(json.load(response)["video"])
+        self.service.generate("en-sneeze")
+        with urlopen(endpoint) as response:
+            self.assertIsNone(json.load(response)["video"])
+        self.complete()
+        with urlopen(endpoint) as response:
+            video = json.load(response)["video"]
+        self.assertEqual("completed", video["status"])
+        self.assertTrue(video["videoUrl"].startswith("/api/public/media/"))
+        with urlopen(Request(base + video["videoUrl"], headers={"Range": "bytes=0-31"})) as response:
+            self.assertEqual(206, response.status)
+            self.assertEqual(32, len(response.read()))
+        with self.assertRaises(HTTPError) as failure:
+            urlopen(Request(base + "/api/lessons/en-sneeze/video", data=b"{}"))
+        self.assertEqual(401, failure.exception.code)
+
+    def test_public_playback_is_disabled_by_default(self):
+        http = create_server(("127.0.0.1", 0), self.service, self.config.token)
+        thread = threading.Thread(target=http.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(http.server_close)
+        self.addCleanup(http.shutdown)
+        base = "http://127.0.0.1:{}".format(http.server_port)
+        with self.assertRaises(HTTPError) as failure:
+            urlopen(base + "/api/public/lessons/en-sneeze/video")
+        self.assertEqual(401, failure.exception.code)
+
 
 if __name__ == "__main__":
     unittest.main()

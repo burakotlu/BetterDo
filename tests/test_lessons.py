@@ -101,7 +101,7 @@ class LessonServiceTests(unittest.TestCase):
         db.close()
         upgraded = VideoDatabase(path)
         with upgraded.connect() as db:
-            self.assertEqual(2, db.execute("PRAGMA user_version").fetchone()[0])
+            self.assertEqual(3, db.execute("PRAGMA user_version").fetchone()[0])
             self.assertEqual("keep", db.execute("SELECT id FROM generation_requests").fetchone()[0])
 
     def test_disabled_generation_is_explicit(self):

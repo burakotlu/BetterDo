@@ -32,10 +32,11 @@ data class LearningState(
     val writable: Boolean = true
 ) {
     val language get() = progress.language
+    val level get() = progress.levels[language]
     val catalog get() = lessons.filter { it.language == language }
     val course get() = progress.courses.getValue(language)
-    val available get() = catalog.filter { it.id in activeIds }
-    val daily get() = catalog.find { it.id == course.daily[today] }
+    val available get() = catalog.filter { it.id in activeIds && it.level == level }
+    val daily get() = catalog.find { it.id == course.daily[today] && it.level == level }
         ?: available.takeIf { it.isNotEmpty() }?.let { Scheduler.daily(it, course, today) }
     val due get() = Scheduler.due(catalog, course, today)
 }
@@ -48,7 +49,7 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
     private val repository = CatalogRepository(source, database, HttpCatalogClient(BuildConfig.DEBUG))
     private val generatedRepository = CatalogRepository("generated-lessons", database, CatalogClient { error("Use the lesson service") })
     private var syncJob: Job? = null
-    private var lessonService: VideoApi? = null
+    private var lessonService: LessonApi? = null
     private var initialized = false
     private val mutable = MutableStateFlow(LearningState())
     val state = mutable.asStateFlow()
@@ -76,8 +77,9 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
 
     private fun pinDaily(progress: LearningProgress, lessons: List<Lesson>, today: LocalDate): LearningProgress {
         val courses = progress.courses.mapValues { (lang, course) ->
-            val available = lessons.filter { it.language == lang && it.id in mutable.value.activeIds }
-            if (available.isEmpty() || lessons.any { it.id == course.daily[today] }) course
+            val level = progress.levels[lang]
+            val available = lessons.filter { it.language == lang && it.level == level && it.id in mutable.value.activeIds }
+            if (available.isEmpty() || lessons.any { it.id == course.daily[today] && it.level == level }) course
             else course.copy(daily = course.daily + (today to Scheduler.daily(available, course, today).id))
         }
         return progress.copy(courses = courses)
@@ -142,7 +144,7 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun connectLessonService(api: VideoApi) {
+    fun connectLessonService(api: LessonApi?) {
         lessonService = api
         refreshCatalog()
     }
@@ -166,6 +168,19 @@ class LearningViewModel(application: Application) : AndroidViewModel(application
     fun changeLanguage(language: String) {
         require(language in listOf("en", "de"))
         viewModelScope.launch { updateProgress { it.copy(language = language) } }
+    }
+
+    fun selectLevel(language: String, level: String) {
+        require(language in listOf("en", "de") && level in LanguageLevels.labels)
+        viewModelScope.launch {
+            updateProgress { progress ->
+                val course = progress.courses.getValue(language)
+                val changed = progress.levels[language] != level
+                progress.copy(language = language, levels = progress.levels + (language to level),
+                    courses = if (changed) progress.courses + (language to course.copy(daily = course.daily - LocalDate.now())) else progress.courses)
+            }
+            getApplication<Application>().getSharedPreferences("lesson_requests", 0).edit().putString("level:$language", level).apply()
+        }
     }
 
     fun answer(lesson: Lesson, question: Int, answer: Int) {

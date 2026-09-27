@@ -64,20 +64,32 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BetterDoApp(model: LearningViewModel = viewModel()) {
-    val videoSettings: VideoSettings = viewModel()
-    var showVideoSettings by remember { mutableStateOf(false) }
-    if (showVideoSettings) VideoSettingsDialog(videoSettings) { showVideoSettings = false }
-    LaunchedEffect(videoSettings.serverUrl, videoSettings.accessToken) {
-        if (videoSettings.serverUrl.isNotBlank() && videoSettings.accessToken.isNotBlank()) {
-            model.connectLessonService(VideoApi(videoSettings.serverUrl, videoSettings.accessToken))
-        }
+    val account: AccountViewModel = viewModel()
+    var showAccount by remember { mutableStateOf(false) }
+    if (showAccount) AccountDialog(account) { showAccount = false }
+    val lessonApi = remember(account.user?.id, account.configured) {
+        if (account.user != null && account.configured) LessonApi(BuildConfig.BACKEND_URL) { account.accessToken() } else null
+    }
+    LaunchedEffect(lessonApi) {
+        model.connectLessonService(lessonApi)
     }
     val state by model.state.collectAsStateWithLifecycle()
+    if (state.loading && state.level == null) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        return
+    }
+    if (!state.loading && state.level == null) {
+        CourseLevelScreen(state.progress, state.message) { language, level -> model.selectLevel(language, level) }
+        return
+    }
+    var showLevelPicker by remember { mutableStateOf(false) }
+    if (showLevelPicker && state.level != null) ChangeLevelDialog(state.level!!, { model.selectLevel(state.language, it) }) { showLevelPicker = false }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var exploreTopics by rememberSaveable { mutableStateOf(false) }
     if (exploreTopics) key(state.language) {
-        LessonDiscovery(state.language, videoSettings, { showVideoSettings = true }, { exploreTopics = false }) { raw ->
+        LessonDiscovery(state.language, lessonApi, account.user?.id, { showAccount = true }, { exploreTopics = false },
+            selectedLevel = state.level, onLevelSelected = { model.selectLevel(state.language, it) }) { raw ->
             model.saveGeneratedLesson(raw) { id -> selectedId = id; tab = 0; exploreTopics = false }
         }
     }
@@ -94,7 +106,7 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
         lifecycle.lifecycle.addObserver(observer)
         onDispose { lifecycle.lifecycle.removeObserver(observer); speech.close() }
     }
-    LaunchedEffect(state.language, state.today) { selectedId = null; speech.stop() }
+    LaunchedEffect(state.language, state.level, state.today) { selectedId = null; speech.stop() }
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(state.message, speechMessage) {
         val text = speechMessage ?: state.message
@@ -105,6 +117,9 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.app_name) + ".", fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp) },
                 actions = {
+                    IconButton(onClick = { showAccount = true }) {
+                        Icon(Icons.Outlined.AccountCircle, contentDescription = if (account.user == null) "Open account" else "Open account for ${account.user!!.email}")
+                    }
                     IconButton(onClick = { exploreTopics = true }, enabled = !state.loading) {
                         Icon(Icons.Outlined.AutoAwesome, contentDescription = "Explore topics")
                     }
@@ -153,12 +168,12 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
                         key(lesson.id, state.today, tab) {
                             Column(Modifier.widthIn(max = 640.dp).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                                 if (selected != null) TextButton(onClick = { selectedId = null; speech.stop() }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null); Text(if (tab == 0) " Back to today's word" else " Back to the list") }
-                                if (tab == 0) Intro(state)
+                                if (tab == 0) Intro(state) { showLevelPicker = true }
                                 if (tab == 0) OutlinedButton(onClick = { exploreTopics = true }, modifier = Modifier.fillMaxWidth()) { Text("Create a lesson by topic") }
                                 if (state.syncError != null) Text(state.syncError.orEmpty(), color = Muted, fontSize = 12.sp)
                                 if (!state.writable) Text("Saved progress could not be read. Changes in this session are not being saved.", color = MaterialTheme.colorScheme.error)
                                 LessonContent(lesson, state, model, speech) { if (tab == 1) selectedId = null }
-                                AiVideoSection(lesson, videoSettings, { showVideoSettings = true }, { speech.stop() })
+                                AiVideoSection(lesson, stopSpeech = { speech.stop() })
                                 if (tab == 0 && state.course.cards[lesson.id]?.lastPracticed == state.today) {
                                     val next = Scheduler.nextUnseen(state.available, state.course)
                                     if (next != null) {
@@ -175,9 +190,10 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
                         }
                     } else if (tab == 0) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            EmptyCard("Choose what you want to learn", "Explore topics and create an AI lesson for your interests and level.")
+                            EmptyCard("No ${state.level} lesson yet", "Explore topics to create a word at your level, or change your level.")
                             state.syncError?.let { Text(it, color = Muted) }
                             Button(onClick = { exploreTopics = true }) { Text("Explore topics") }
+                            OutlinedButton(onClick = { showLevelPicker = true }) { Text("Change level") }
                         }
                     } else {
                         val list = if (tab == 1) state.due else state.catalog.filter { it.id in state.course.cards }
@@ -190,11 +206,14 @@ fun BetterDoApp(model: LearningViewModel = viewModel()) {
 }
 
 @Composable
-private fun Intro(state: LearningState) {
+private fun Intro(state: LearningState, changeLevel: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.padding(top = 8.dp)) {
         Text(state.today.format(DateTimeFormatter.ofPattern("d MMMM EEEE", Locale.ENGLISH)).uppercase(Locale.ENGLISH), fontSize = 10.sp, letterSpacing = 1.6.sp, color = Muted)
         Text("One more word today.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
         Text(stringResource(R.string.app_motto), color = Muted, fontSize = 13.sp)
+        OutlinedButton(onClick = changeLevel, modifier = Modifier.heightIn(min = 48.dp)) {
+            Text("${state.level} · ${LanguageLevels.labels[state.level]} · Change level")
+        }
         val practiced = Scheduler.practicedToday(state.course, state.today)
         Text(if (practiced == 0) "Daily minimum: practice 1 word. Keep going whenever you like."
             else "Daily goal reached! $practiced ${if (practiced == 1) "word" else "words"} practiced today. No daily limit.", color = Muted, fontSize = 13.sp)

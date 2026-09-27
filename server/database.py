@@ -15,7 +15,10 @@ class VideoDatabase:
                 version = 1
             if version == 1:
                 db.executescript("BEGIN IMMEDIATE;\n" + Path(__file__).with_name("migrations").joinpath("002_lessons.sql").read_text() + "\nCOMMIT;")
-            elif version != 2:
+                version = 2
+            if version == 2:
+                db.executescript("BEGIN IMMEDIATE;\n" + Path(__file__).with_name("migrations").joinpath("003_accounts.sql").read_text() + "\nCOMMIT;")
+            elif version != 3:
                 raise ValueError("Unsupported video database version")
 
     @contextmanager

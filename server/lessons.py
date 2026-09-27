@@ -25,10 +25,10 @@ class LessonService:
     def categories(self):
         return {"categories": CATEGORIES, "generationEnabled": bool(self.model), "levels": list(LEVELS)}
 
-    def get(self, identity):
+    def get(self, identity, owner_id=None):
         with self.database.connect() as db:
             row = db.execute("SELECT * FROM lesson_jobs WHERE id=?", (identity,)).fetchone()
-            if row is None:
+            if row is None or (owner_id is not None and row["owner_id"] != owner_id):
                 return None
             lesson = db.execute("SELECT body FROM generated_lessons WHERE id=?", (row["lesson_id"],)).fetchone()
             return {"id": row["id"], "status": row["status"], "error": row["error"],
@@ -39,7 +39,7 @@ class LessonService:
             rows = db.execute("SELECT body FROM generated_lessons WHERE (? IS NULL OR language=?) ORDER BY created_at DESC LIMIT 500", (language, language)).fetchall()
             return {"version": 1, "lessons": [json.loads(row[0]) for row in rows]}
 
-    def create(self, identity, language, category, level):
+    def create(self, identity, language, category, level, owner_id=None):
         if not isinstance(identity, str) or len(identity) != 32 or any(c not in "0123456789abcdef" for c in identity):
             raise ValueError("Invalid lesson request ID")
         if language not in ("en", "de") or category not in [item["id"] for item in CATEGORIES] or level not in LEVELS:
@@ -50,18 +50,22 @@ class LessonService:
             db.execute("BEGIN IMMEDIATE")
             old = db.execute("SELECT * FROM lesson_jobs WHERE id=?", (identity,)).fetchone()
             if old:
-                if (old["language"], old["category"], old["level"]) != (language, category, level):
+                if (old["language"], old["category"], old["level"], old["owner_id"]) != (language, category, level, owner_id):
                     raise ValueError("Request ID already belongs to another lesson request")
             else:
+                if owner_id is not None:
+                    user_count = db.execute("SELECT COUNT(*) FROM lesson_jobs WHERE owner_id=? AND created_at>?", (owner_id, time.time() - 86400)).fetchone()[0]
+                    if user_count >= 5:
+                        raise ValueError("Your daily lesson generation allowance is used up")
                 count = db.execute("SELECT COUNT(*) FROM lesson_jobs WHERE created_at>?", (time.time() - 86400,)).fetchone()[0]
                 if count >= self.limit:
                     raise ValueError("The server's daily lesson generation allowance is used up")
                 active = db.execute("SELECT COUNT(*) FROM lesson_jobs WHERE status IN ('pending','processing')").fetchone()[0]
                 if active >= 5:
                     raise ValueError("The lesson queue is full. Try again later")
-                db.execute("INSERT INTO lesson_jobs (id,language,category,level,status,created_at) VALUES (?,?,?,?,'pending',?)",
-                           (identity, language, category, level, time.time()))
-        return self.get(identity)
+                db.execute("INSERT INTO lesson_jobs (id,language,category,level,status,created_at,owner_id) VALUES (?,?,?,?,'pending',?,?)",
+                           (identity, language, category, level, time.time(), owner_id))
+        return self.get(identity, owner_id)
 
     def recover(self):
         with self.database.connect() as db:

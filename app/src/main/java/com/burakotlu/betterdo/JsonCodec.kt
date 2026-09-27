@@ -59,7 +59,12 @@ object JsonCodec {
             CourseProgress(parsedCards, (0 until activity.length()).map { LocalDate.parse(activity.getString(it)) }.toSet(),
                 daily.keys().asSequence().associate { day -> LocalDate.parse(day) to daily.getString(day) })
         }
-        return LearningProgress(language, courses)
+        val savedLevels = if (root.has("levels")) root.getJSONObject("levels") else null
+        val levels = if (savedLevels == null) emptyMap() else savedLevels.keys().asSequence().associateWith { lang ->
+            require(lang in listOf("en", "de"))
+            savedLevels.getString(lang).also { require(it in LanguageLevels.labels) }
+        }
+        return LearningProgress(language, courses, levels)
     }
 
     fun encodeProgress(progress: LearningProgress): String {
@@ -74,6 +79,7 @@ object JsonCodec {
             course.daily.forEach { (day, id) -> daily.put(day.toString(), id) }
             courses.put(language, JSONObject().put("cards", cards).put("activity", JSONArray(course.activity.map { it.toString() })).put("daily", daily))
         }
-        return JSONObject().put("version", 1).put("language", progress.language).put("courses", courses).toString()
+        return JSONObject().put("version", 1).put("language", progress.language).put("courses", courses)
+            .put("levels", JSONObject(progress.levels)).toString()
     }
 }

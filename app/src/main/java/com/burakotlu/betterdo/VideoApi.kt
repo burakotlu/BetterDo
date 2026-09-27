@@ -20,7 +20,7 @@ data class LessonVideo(
 class VideoApi(val baseUrl: String, private val token: String, allowLocalHttp: Boolean = BuildConfig.DEBUG) {
     init {
         validateBaseUrl(baseUrl, allowLocalHttp)
-        require(token.length >= 32 && token.all { it.code in 33..126 }) { "Enter a valid video service access token." }
+        require(token.length >= 32 && token.all { it.code in 33..126 }) { "Enter a valid private lesson service access token." }
     }
 
     fun get(lessonId: String): LessonVideo? = request(lessonId, false, false)
@@ -47,7 +47,7 @@ class VideoApi(val baseUrl: String, private val token: String, allowLocalHttp: B
                 connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
             }
             val code = connection.responseCode
-            if (code !in listOf(200, 202, 400)) throw IOException("Could not reach the lesson service (HTTP $code). Check Service settings.")
+            if (code !in listOf(200, 202, 400)) throw IOException("Could not reach the lesson service (HTTP $code). Check lesson creation settings.")
             val stream = if (code == 400) connection.errorStream else connection.inputStream
             val output = java.io.ByteArrayOutputStream()
             stream.use {
@@ -82,7 +82,7 @@ class VideoApi(val baseUrl: String, private val token: String, allowLocalHttp: B
                 connection.outputStream.use { it.write(JSONObject().put("retry", retry).toString().toByteArray(Charsets.UTF_8)) }
             }
             val code = connection.responseCode
-            if (code == 401) throw IOException("Check your video service access token in Service settings.")
+            if (code == 401) throw IOException("Check the private lesson service access token in lesson creation settings.")
             if (code !in listOf(200, 202, 400)) throw IOException("Video service unavailable (HTTP $code). Try checking again.")
             val input = if (code == 400) connection.errorStream else connection.inputStream
             val raw = input.use { stream ->
@@ -113,7 +113,7 @@ class VideoApi(val baseUrl: String, private val token: String, allowLocalHttp: B
             require(item.getString("lessonId") == lessonId)
             val status = VideoStatus.valueOf(item.getString("status").uppercase(java.util.Locale.ROOT))
             val path = if (item.isNull("videoUrl")) null else item.getString("videoUrl")
-            if (path != null) require(path.matches(Regex("/media/[a-f0-9]{32}\\.mp4")))
+            if (path != null) require(path.matches(Regex("/(?:api/public/)?media/[a-f0-9]{32}\\.mp4")))
             require(status != VideoStatus.COMPLETED || path != null)
             require(item.getString("script").length <= 1200)
             return LessonVideo(item.getString("id"), status, path, item.getString("script"), item.getString("provider") == "mock",

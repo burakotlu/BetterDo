@@ -18,7 +18,9 @@ authenticated BetterDo backend should expose generation to clients.
 - `GET /api/lesson-jobs/{id}`: pending/processing/completed/failed and the final lesson.
 - `GET /api/catalog`: up to 500 newest generated lessons, in the existing catalog format.
 
-All endpoints use the same service token. The worker reuses the existing Ollama
+Lesson endpoints accept signed-in BetterDo account sessions. The private operator
+token is also accepted for administration and is never bundled in the app. Each
+account may create five jobs per rolling 24 hours. The worker reuses the existing Ollama
 generator and its bounded repair loop. Jobs are idempotent by request ID; five jobs
 may be active at once. A separate worker keeps slow model generation from blocking
 video polling. Interrupted model calls become explicitly failed on restart; queued
@@ -28,16 +30,20 @@ Migration `002_lessons.sql` adds `generated_lessons` and `lesson_jobs`, preservi
 the version-1 video tables. Generated lessons have server-assigned IDs and a unique
 language/word key. Video generation resolves these stored lessons directly. The
 manually reviewed JSON catalog remains only a legacy video lookup source; it is not
-needed to generate or serve new lessons. Shared private-service users see the same
-generated catalog. Add account-specific access rules before a public multi-user launch.
+needed to generate or serve new lessons. Signed-in users see the shared generated
+catalog, but each job belongs to its requesting account.
 
 AI lessons are marked as generated and validated for schema, language, level, and
 duplicate words. They are not human-reviewed and can contain linguistic mistakes.
 No model is installed automatically, and tests use controlled model responses.
 
-This optional Python standard-library service complements the native Android app.
-There was no existing hosted API, authentication system, or server database to
-extend. The catalog and progress architecture remain unchanged. No OpenAI
+This Python standard-library service hosts the native Android app's accounts,
+lessons, and videos. Set `ACCOUNT_SMTP_HOST`, `ACCOUNT_SMTP_PORT`,
+`ACCOUNT_SMTP_USERNAME`, `ACCOUNT_SMTP_PASSWORD`, and `ACCOUNT_EMAIL_FROM` to
+deliver verification codes. Account data and session hashes live in the same
+persistent SQLite database. Account routes are `/api/account/signup`, `verify`,
+`signin`, `session`, `profile`, and `signout`. Publish the service behind HTTPS;
+no hosted server or SMTP sender is provisioned here. No OpenAI
 integration is introduced: scripts use reviewed catalog definitions and examples.
 
 ## Local mock development
@@ -55,19 +61,19 @@ If using the older Anaconda installation on Windows and sqlite3 reports a missin
 DLL, activate its environment first. Do not install a third-party sqlite package.
 On Linux/macOS use `python3` instead of `py -3`.
 
-Run the Android debug app, open a lesson, scroll to **AI Video**, and open
-**Service settings**. Use `http://10.0.2.2:8080` on the Android emulator, or
-`http://127.0.0.1:8080` with `adb reverse tcp:8080 tcp:8080` on a USB device.
-Enter your `VIDEO_API_TOKEN` as the service access token. The app remembers the
-server URL, but holds the token only in memory; enter it again after process death.
-Never enter the HeyGen API key into the app.
+Set `PUBLIC_VIDEO_PLAYBACK=true` in `.env` to publish completed videos for
+token-free playback. Generate a video explicitly with the private API:
 
-Press **Generate AI Video**. The job moves through pending and processing to
-completed in roughly 5–10 seconds. Play the 20-second portrait sample. It is a
-silent mock preview, not an AI teacher or a lesson-specific recording. It works
-without Ollama, FFmpeg, a provider account, or external video hosting. Opening a
-lesson never submits a paid generation. Leaving the screen stops client polling;
-the server worker continues and the app retrieves the job when you return.
+```powershell
+$headers = @{ Authorization = "Bearer YOUR_VIDEO_API_TOKEN" }
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8080/api/lessons/en-sneeze/video -Headers $headers -ContentType application/json -Body '{}'
+```
+
+The mock job completes in roughly 5–10 seconds. Build the emulator app with
+`-PdebugVideoPlaybackUrl=http://10.0.2.2:8080`; the completed sample starts in
+**AI Video** without entering a URL or token on the device. The sample is silent
+and is not an AI teacher recording. Real videos require the configured provider,
+FFmpeg, and an HTTPS server. Opening a lesson never submits a paid generation.
 
 ## Configuration
 
@@ -78,6 +84,7 @@ the server worker continues and the app retrieves the job when you return.
 | `AI_TEACHER_AVATAR_ID` | One fixed HeyGen avatar **look** ID |
 | `AI_TEACHER_VOICE_ID` | One fixed voice ID; select a voice supporting English and German |
 | `VIDEO_API_TOKEN` | Required random private-service credential, at least 32 ASCII characters |
+| `PUBLIC_VIDEO_PLAYBACK` | `false` by default; `true` exposes completed videos for direct playback |
 | `VIDEO_DAILY_LIMIT` | Global new-job limit over a rolling 24 hours; default 10 |
 | `VIDEO_DATA_DIR` | Persistent SQLite database and finished MP4s; default `server-data` |
 | `VIDEO_CATALOG_PATH` | Reviewed server catalog; default `content/lessons.json` |
@@ -103,8 +110,8 @@ and [get video](https://developers.heygen.com/reference/get-video), including a
 stable idempotency key, 9:16 output, fixed avatar/voice, and burned-in captions.
 FFmpeg archives the captioned MP4 and adds a persistent word/IPA heading, so the
 finished file includes the teaching text when used outside the app. Provider CDN
-URLs and duration are stored internally; clients play the archived authenticated
-file instead of depending on an expiring provider URL.
+URLs and duration are stored internally; clients play the archived completed
+file through the public read-only route instead of an expiring provider URL.
 
 The script includes the word, English definition, first two reviewed target-language
 examples, and a repetition prompt. Scripts exceeding 70 words/900 characters are
@@ -116,7 +123,7 @@ English. Extra translation overlays are not enabled in this implementation.
 ## Architecture and API
 
 `teaching.py` → `VideoService` → SQLite queue → background worker →
-`VideoGenerationProvider` → `VideoMedia` → authenticated Android player.
+`VideoGenerationProvider` → `VideoMedia` → public read-only Android player.
 
 - `POST /api/lessons/{lessonId}/video` with `{}` creates/reuses a job and returns
   immediately (202 while active). The client cannot supply scripts, avatars,
@@ -125,8 +132,12 @@ English. Extra translation overlays are not enabled in this implementation.
 - `POST` with `{ "retry": true }` explicitly retries a failed job after a
   30-second cooldown. Network uncertainty reuses the saved job/key. A provider
   reporting a terminal failed render allows a new, budgeted submission.
-- `GET /media/{id}.mp4` supports byte ranges for seeking. All routes require
+- `GET /media/{id}.mp4` supports byte ranges for seeking. These private routes require
   `Authorization: Bearer <VIDEO_API_TOKEN>`; no token is placed in a URL.
+- With `PUBLIC_VIDEO_PLAYBACK=true`, `GET /api/public/lessons/{lessonId}/video`
+  returns only completed jobs and `GET /api/public/media/{id}.mp4` streams only
+  files belonging to completed jobs. These read-only routes need no token and
+  support byte ranges. POST generation and all other routes remain authenticated.
 
 `server/migrations/001_videos.sql` creates `lesson_videos` and a separate
 `generation_requests` budget ledger, with SQLite `user_version=1`. A unique
